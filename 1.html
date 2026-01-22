@@ -1,0 +1,1625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Context Readiness Scorecard - Making AI Work</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.95;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .header .byline {
+            margin-top: 20px;
+            font-size: 0.95em;
+            opacity: 0.9;
+        }
+        
+        .header .byline a {
+            color: white;
+            text-decoration: underline;
+            font-weight: 500;
+        }
+        
+        .header .byline a:hover {
+            opacity: 0.8;
+        }
+        
+        .content {
+            padding: 40px 30px;
+        }
+        
+        .intro {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8fafc;
+            border-left: 4px solid #3b82f6;
+            border-radius: 4px;
+        }
+        
+        .intro h2 {
+            color: #1e3a8a;
+            margin-bottom: 10px;
+        }
+        
+        .dimension {
+            margin-bottom: 40px;
+            padding: 25px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .dimension h3 {
+            color: #1e3a8a;
+            margin-bottom: 8px;
+            font-size: 1.3em;
+        }
+        
+        .dimension-desc {
+            color: #64748b;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+        }
+        
+        .question {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        .question-text {
+            font-weight: 500;
+            margin-bottom: 15px;
+            color: #334155;
+            font-size: 1em;
+        }
+        
+        .likert-scale {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        
+        .likert-option {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .likert-option input[type="radio"] {
+            display: none;
+        }
+        
+        .likert-option label {
+            display: block;
+            padding: 12px 8px;
+            background: white;
+            border: 2px solid #e2e8f0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9em;
+            font-weight: 500;
+            min-height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .likert-option input[type="radio"]:checked + label {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+            font-weight: 600;
+            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+        }
+        
+        .likert-option label:hover {
+            border-color: #3b82f6;
+            background: #eff6ff;
+        }
+        
+        .likert-option input[type="radio"]:checked + label:hover {
+            background: #2563eb;
+        }
+        
+        .likert-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 0.85em;
+            color: #64748b;
+            font-weight: 500;
+        }
+        
+        /* Mobile labels - hidden by default, shown on mobile */
+        .mobile-label {
+            display: none;
+            text-align: center;
+            font-size: 0.75em;
+            color: #64748b;
+            margin-top: 4px;
+            font-weight: 500;
+        }
+        
+        .calculate-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #3b82f6 0%, #1e3a8a 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 20px;
+            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
+        }
+        
+        .calculate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.4);
+        }
+        
+        .calculate-btn:active {
+            transform: translateY(0);
+        }
+        
+        .calculate-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .results {
+            display: none;
+            margin-top: 40px;
+            padding: 30px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            opacity: 0;
+            transition: opacity 0.4s ease-in-out;
+        }
+        
+        .results.show {
+            display: block;
+            animation: fadeIn 0.5s ease-in-out forwards;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .results h2 {
+            color: #1e3a8a;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        
+        .chart-container {
+            max-width: 500px;
+            margin: 30px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .dimension-scores {
+            margin: 25px 0;
+        }
+        
+        .dimension-score {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 12px;
+            background: white;
+            border-radius: 6px;
+            border-left: 4px solid;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        .dimension-score.red {
+            border-left-color: #ef4444;
+        }
+        
+        .dimension-score.yellow {
+            border-left-color: #f59e0b;
+        }
+        
+        .dimension-score.green {
+            border-left-color: #10b981;
+        }
+        
+        .score-label {
+            font-weight: 600;
+            color: #334155;
+        }
+        
+        .score-value {
+            font-size: 1.3em;
+            font-weight: 700;
+            padding: 5px 15px;
+            border-radius: 4px;
+            background: #f8fafc;
+        }
+        
+        .score-value.red {
+            color: #ef4444;
+        }
+        
+        .score-value.yellow {
+            color: #f59e0b;
+        }
+        
+        .score-value.green {
+            color: #10b981;
+        }
+        
+        .interpretation {
+            margin-top: 30px;
+            padding: 25px;
+            background: white;
+            border-radius: 8px;
+            line-height: 1.8;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .interpretation h3 {
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+        
+        .interpretation p {
+            margin-bottom: 15px;
+        }
+        
+        .interpretation ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        
+        .interpretation li {
+            margin-bottom: 8px;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        .action-buttons button {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .download-btn {
+            background: #10b981;
+            color: white;
+        }
+        
+        .download-btn:hover {
+            background: #059669;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+        }
+        
+        .reset-btn {
+            background: #64748b;
+            color: white;
+        }
+        
+        .reset-btn:hover {
+            background: #475569;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(100, 116, 139, 0.3);
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding: 30px;
+            background: #1e293b;
+            color: white;
+            text-align: center;
+        }
+        
+        .footer p {
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+        
+        .footer a {
+            color: #60a5fa;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .header {
+                padding: 30px 20px;
+            }
+            
+            .header h1 {
+                font-size: 1.5em;
+            }
+            
+            .header p {
+                font-size: 0.95em;
+            }
+            
+            .content {
+                padding: 25px 20px;
+            }
+            
+            .dimension {
+                padding: 20px 15px;
+            }
+            
+            .dimension h3 {
+                font-size: 1.15em;
+            }
+            
+            .question {
+                padding: 12px;
+            }
+            
+            .question-text {
+                font-size: 0.95em;
+                margin-bottom: 12px;
+            }
+            
+            /* Hide desktop labels on mobile */
+            .likert-labels {
+                display: none;
+            }
+            
+            /* Show mobile labels */
+            .mobile-label {
+                display: block;
+            }
+            
+            /* Stack Likert scale vertically on very small screens */
+            .likert-scale {
+                gap: 6px;
+            }
+            
+            .likert-option label {
+                padding: 10px 6px;
+                font-size: 0.85em;
+            }
+            
+            .calculate-btn {
+                font-size: 1em;
+                padding: 14px;
+            }
+            
+            .results {
+                padding: 20px 15px;
+            }
+            
+            .results h2 {
+                font-size: 1.4em;
+            }
+            
+            .chart-container {
+                padding: 15px;
+            }
+            
+            .dimension-score {
+                padding: 12px;
+            }
+            
+            .score-label {
+                font-size: 0.9em;
+            }
+            
+            .score-value {
+                font-size: 1.1em;
+                padding: 4px 10px;
+            }
+            
+            .interpretation {
+                padding: 20px 15px;
+            }
+            
+            .interpretation h3 {
+                font-size: 1.15em;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .action-buttons button {
+                padding: 12px;
+            }
+            
+            .footer {
+                padding: 25px 20px;
+                font-size: 0.9em;
+            }
+        }
+        
+        /* Very small screens - stack Likert options */
+        @media (max-width: 480px) {
+            .likert-scale {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .likert-option {
+                width: 100%;
+            }
+            
+            .likert-option label {
+                padding: 12px;
+                font-size: 0.9em;
+            }
+            
+            /* Show labels inline on stacked layout */
+            .mobile-label {
+                display: inline-block;
+                margin-left: 8px;
+            }
+        }
+        
+        /* Print styles */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            
+            .container {
+                box-shadow: none;
+            }
+            
+            .calculate-btn,
+            .action-buttons {
+                display: none;
+            }
+            
+            .dimension,
+            .question {
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Context Readiness Scorecard</h1>
+            <p>Assess your organization's readiness for enterprise AI that actually delivers ROI</p>
+            <div class="byline">
+                Part of the <strong>Making AI Work</strong> series by <a href="https://www.linkedin.com/in/thomas-larson-211a1981/" target="_blank">Thomas Larson</a>
+            </div>
+        </div>
+        
+        <div class="content">
+            <div class="intro">
+                <h2>Why This Matters</h2>
+                <p><strong>95% of AI pilots fail to deliver measurable ROI.</strong> The problem? Context readiness, not model capability. This diagnostic helps you understand where your organization stands across the four critical dimensions that separate AI leaders from laggards.</p>
+                <p style="margin-top: 15px;"><strong>Time to complete:</strong> 5-7 minutes | <strong>Questions:</strong> 16 | <strong>Your data stays private</strong> (nothing is sent to a server)</p>
+            </div>
+            
+            <form id="assessmentForm">
+                <!-- Dimension 1: Data Integration -->
+                <div class="dimension">
+                    <h3>1. Data Integration & Accessibility</h3>
+                    <p class="dimension-desc">Can AI actually access the information it needs, when it needs it?</p>
+                    
+                    <div class="question">
+                        <div class="question-text">1.1 How well are your critical data sources connected and accessible to AI systems?</div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q1_1" id="q1_1_1" value="1">
+                                <label for="q1_1_1">1</label>
+                                <div class="mobile-label">Siloed</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_1" id="q1_1_2" value="2">
+                                <label for="q1_1_2">2</label>
+                                <div class="mobile-label">Some APIs</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_1" id="q1_1_3" value="3">
+                                <label for="q1_1_3">3</label>
+                                <div class="mobile-label">Partially</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_1" id="q1_1_4" value="4">
+                                <label for="q1_1_4">4</label>
+                                <div class="mobile-label">Mostly</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_1" id="q1_1_5" value="5">
+                                <label for="q1_1_5">5</label>
+                                <div class="mobile-label">Fully</div>
+                            </div>
+                        </div>
+                        <div class="likert-labels">
+                            <span>Siloed systems, manual exports</span>
+                            <span>Partially connected</span>
+                            <span>Real-time, governed access</span>
+                        </div>
+                    </div>
+                    
+                    <div class="question">
+                        <div class="question-text">1.2 What is your data quality across key sources that AI would need to use?</div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q1_2" id="q1_2_1" value="1">
+                                <label for="q1_2_1">1</label>
+                                <div class="mobile-label">Poor</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_2" id="q1_2_2" value="2">
+                                <label for="q1_2_2">2</label>
+                                <div class="mobile-label">Basic</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_2" id="q1_2_3" value="3">
+                                <label for="q1_2_3">3</label>
+                                <div class="mobile-label">Moderate</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_2" id="q1_2_4" value="4">
+                                <label for="q1_2_4">4</label>
+                                <div class="mobile-label">Good</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_2" id="q1_2_5" value="5">
+                                <label for="q1_2_5">5</label>
+                                <div class="mobile-label">Excellent</div>
+                            </div>
+                        </div>
+                        <div class="likert-labels">
+                            <span>Inconsistent, unverified</span>
+                            <span>Validated in key areas</span>
+                            <span>Continuously monitored</span>
+                        </div>
+                    </div>
+                    
+                    <div class="question">
+                        <div class="question-text">1.3 Can your systems share context (relevant data and state information) in real-time across applications?</div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q1_3" id="q1_3_1" value="1">
+                                <label for="q1_3_1">1</label>
+                                <div class="mobile-label">No</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_3" id="q1_3_2" value="2">
+                                <label for="q1_3_2">2</label>
+                                <div class="mobile-label">Limited</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_3" id="q1_3_3" value="3">
+                                <label for="q1_3_3">3</label>
+                                <div class="mobile-label">Some</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_3" id="q1_3_4" value="4">
+                                <label for="q1_3_4">4</label>
+                                <div class="mobile-label">Mostly</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_3" id="q1_3_5" value="5">
+                                <label for="q1_3_5">5</label>
+                                <div class="mobile-label">Yes</div>
+                            </div>
+                        </div>
+                        <div class="likert-labels">
+                            <span>Batch only, delayed</span>
+                            <span>Some real-time</span>
+                            <span>Seamless, real-time</span>
+                        </div>
+                    </div>
+                    
+                    <div class="question">
+                        <div class="question-text">1.4 How fresh is the data available to AI systems?</div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q1_4" id="q1_4_1" value="1">
+                                <label for="q1_4_1">1</label>
+                                <div class="mobile-label">Days old</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_4" id="q1_4_2" value="2">
+                                <label for="q1_4_2">2</label>
+                                <div class="mobile-label">Hours</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_4" id="q1_4_3" value="3">
+                                <label for="q1_4_3">3</label>
+                                <div class="mobile-label">Minutes</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_4" id="q1_4_4" value="4">
+                                <label for="q1_4_4">4</label>
+                                <div class="mobile-label">Near real-time</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q1_4" id="q1_4_5" value="5">
+                                <label for="q1_4_5">5</label>
+                                <div class="mobile-label">Real-time</div>
+                            </div>
+                        </div>
+                        <div class="likert-labels">
+                            <span>Days old</span>
+                            <span>Hourly updates</span>
+                            <span>Real-time</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Dimension 2: Organizational Alignment -->
+                <div class="dimension">
+                    <h3>2. Organizational Alignment & Process Readiness</h3>
+                    <p class="dimension-desc">Does your organization understand what AI needs to succeed?</p>
+                    
+                    <div class="question">
+                        <div class="question-text">2.1 Do stakeholders understand what AI requires to deliver value?</div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q2_1" id="q2_1_1" value="1">
+                                <label for="q2_1_1">1</label>
+                                <div class="mobile-label">No</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_1" id="q2_1_2" value="2">
+                                <label for="q2_1_2">2</label>
+                                <div class="mobile-label">Minimal</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_1" id="q2_1_3" value="3">
+                                <label for="q2_1_3">3</label>
+                                <div class="mobile-label">Partial</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_1" id="q2_1_4" value="4">
+                                <label for="q2_1_4">4</label>
+                                <div class="mobile-label">Good</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_1" id="q2_1_5" value="5">
+                                <label for="q2_1_5">5</label>
+                                <div class="mobile-label">Strong</div>
+                            </div>
+                        </div>
+                        <div class="likert-labels">
+                            <span>Confusion/skepticism</span>
+                            <span>Some understanding</span>
+                            <span>Strong alignment</span>
+                        </div>
+                    </div>
+                    
+                    <div class="question">
+                        <div class="question-text">2.2 Are your workflows and business processes documented?</div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q2_2" id="q2_2_1" value="1">
+                                <label for="q2_2_1">1</label>
+                                <div class="mobile-label">No</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_2" id="q2_2_2" value="2">
+                                <label for="q2_2_2">2</label>
+                                <div class="mobile-label">Minimal</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_2" id="q2_2_3" value="3">
+                                <label for="q2_2_3">3</label>
+                                <div class="mobile-label">Partial</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_2" id="q2_2_4" value="4">
+                                <label for="q2_2_4">4</label>
+                                <div class="mobile-label">Good</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_2" id="q2_2_5" value="5">
+                                <label for="q2_2_5">5</label>
+                                <div class="mobile-label">Comprehensive</div>
+                            </div>
+                        </div>
+                        <div class="likert-labels">
+                            <span>Tribal knowledge</span>
+                            <span>Key areas documented</span>
+                            <span>Comprehensive, maintained</span>
+                        </div>
+                    </div>
+                    
+                    <div class="question">
+                        <div class="question-text">2.3 Is there executive sponsorship for AI transformation?</div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q2_3" id="q2_3_1" value="1">
+                                <label for="q2_3_1">1</label>
+                                <div class="mobile-label">No</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_3" id="q2_3_2" value="2">
+                                <label for="q2_3_2">2</label>
+                                <div class="mobile-label">Passive</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_3" id="q2_3_3" value="3">
+                                <label for="q2_3_3">3</label>
+                                <div class="mobile-label">Moderate</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_3" id="q2_3_4" value="4">
+                                <label for="q2_3_4">4</label>
+                                <div class="mobile-label">Active</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_3" id="q2_3_5" value="5">
+                                <label for="q2_3_5">5</label>
+                                <div class="mobile-label">Champion</div>
+                            </div>
+                        </div>
+                        <div class="likert-labels">
+                            <span>None</span>
+                            <span>Interested observer</span>
+                            <span>Active champion</span>
+                        </div>
+                    </div>
+                    
+                    <div class="question">
+                        <div class="question-text">2.4 How well defined are roles and responsibilities for AI initiatives?</div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q2_4" id="q2_4_1" value="1">
+                                <label for="q2_4_1">1</label>
+                                <div class="mobile-label">Unclear</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_4" id="q2_4_2" value="2">
+                                <label for="q2_4_2">2</label>
+                                <div class="mobile-label">Informal</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_4" id="q2_4_3" value="3">
+                                <label for="q2_4_3">3</label>
+                                <div class="mobile-label">Defined</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_4" id="q2_4_4" value="4">
+                                <label for="q2_4_4">4</label>
+                                <div class="mobile-label">Clear</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q2_4" id="q2_4_5" value="5">
+                                <label for="q2_4_5">5</label>
+                                <div class="mobile-label">Dedicated</div>
+                            </div>
+                        </div>
+                        <div class="likert-labels">
+                            <span>Unclear</span>
+                            <span>Some definition</span>
+                            <span>Dedicated AI roles</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Dimension 3: System Architecture -->
+                <div class="dimension">
+                    <h3>3. System Architecture & Technical Foundation</h3>
+                    <p class="dimension-desc">Is your infrastructure ready to support context-rich AI?</p>
+                    
+                    <div class="question">
+                        <div class="question-text">3.1 Is your infrastructure architected to support AI context requirements?</div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q3_1" id="q3_1_1" value="1">
+                                <label for="q3_1_1">1</label>
+                                <div class="mobile-label">Legacy</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_1" id="q3_1_2" value="2">
+                                <label for="q3_1_2">2</label>
+                                <div class="mobile-label">Some updates</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_1" id="q3_1_3" value="3">
+                                <label for="q3_1_3">3</label>
+                                <div class="mobile-label">Partial</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_1" id="q3_1_4" value="4">
+                                <label for="q3_1_4">4</label>
+                                <div class="mobile-label">Mostly ready</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_1" id="q3_1_5" value="5">
+                                <label for="q3_1_5">5</label>
+                                <div class="mobile-label">Purpose-built</div>
+                            </div>
+                        </div>
+                        <div class="likert-labels">
+                            <span>Legacy systems</span>
+                            <span>Modernization underway</span>
+                            <span>AI-ready architecture</span>
+                        </div>
+                    </div>
+                    
+                    <div class="question">
+                        <div class="question-text">3.2 Are your APIs documented and standardized?</div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q3_2" id="q3_2_1" value="1">
+                                <label for="q3_2_1">1</label>
+                                <div class="mobile-label">No</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_2" id="q3_2_2" value="2">
+                                <label for="q3_2_2">2</label>
+                                <div class="mobile-label">Minimal</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_2" id="q3_2_3" value="3">
+                                <label for="q3_2_3">3</label>
+                                <div class="mobile-label">Partial</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_2" id="q3_2_4" value="4">
+                                <label for="q3_2_4">4</label>
+                                <div class="mobile-label">Mostly</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_2" id="q3_2_5" value="5">
+                                <label for="q3_2_5">5</label>
+                                <div class="mobile-label">Comprehensive</div>
+                            </div>
+                        </div>
+                        <div class="likert-labels">
+                            <span>Inconsistent/undocumented</span>
+                            <span>Some standardization</span>
+                            <span>Well-documented, versioned</span>
+                        </div>
+                    </div>
+                    
+                    <div class="question">
+                        <div class="question-text">3.3 Is scalability planned for in your technical architecture?</div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q3_3" id="q3_3_1" value="1">
+                                <label for="q3_3_1">1</label>
+                                <div class="mobile-label">No</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_3" id="q3_3_2" value="2">
+                                <label for="q3_3_2">2</label>
+                                <div class="mobile-label">Limited</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_3" id="q3_3_3" value="3">
+                                <label for="q3_3_3">3</label>
+                                <div class="mobile-label">Planned</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_3" id="q3_3_4" value="4">
+                                <label for="q3_3_4">4</label>
+                                <div class="mobile-label">Built-in</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_3" id="q3_3_5" value="5">
+                                <label for="q3_3_5">5</label>
+                                <div class="mobile-label">Enterprise-grade</div>
+                            </div>
+                        </div>
+                        <div class="likert-labels">
+                            <span>Not considered</span>
+                            <span>Roadmap exists</span>
+                            <span>Enterprise-scale ready</span>
+                        </div>
+                    </div>
+                    
+                    <div class="question">
+                        <div class="question-text">3.4 Do you have observability and monitoring for AI systems?</div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q3_4" id="q3_4_1" value="1">
+                                <label for="q3_4_1">1</label>
+                                <div class="mobile-label">None</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_4" id="q3_4_2" value="2">
+                                <label for="q3_4_2">2</label>
+                                <div class="mobile-label">Basic logs</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_4" id="q3_4_3" value="3">
+                                <label for="q3_4_3">3</label>
+                                <div class="mobile-label">Some metrics</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_4" id="q3_4_4" value="4">
+                                <label for="q3_4_4">4</label>
+                                <div class="mobile-label">Good dashboards</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q3_4" id="q3_4_5" value="5">
+                                <label for="q3_4_5">5</label>
+                                <div class="mobile-label">Comprehensive</div>
+                            </div>
+                        </div>
+                        <div class="likert-labels">
+                            <span>None</span>
+                            <span>Basic metrics</span>
+                            <span>Full observability stack</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Dimension 4: Governance -->
+                <div class="dimension">
+                    <h3>4. Governance & Quality Assurance</h3>
+                    <p class="dimension-desc">Can you ensure quality, compliance, and continuous improvement?</p>
+                    
+                    <div class="question">
+                        <div class="question-text">4.1 Are quality standards defined for AI outputs?</div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q4_1" id="q4_1_1" value="1">
+                                <label for="q4_1_1">1</label>
+                                <div class="mobile-label">None</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q4_1" id="q4_1_2" value="2">
+                                <label for="q4_1_2">2</label>
+                                <div class="mobile-label">Informal</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q4_1" id="q4_1_3" value="3">
+                                <label for="q4_1_3">3</label>
+                                <div class="mobile-label">Defined</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q4_1" id="q4_1_4" value="4">
+                                <label for="q4_1_4">4</label>
+                                <div class="mobile-label">Enforced</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q4_1" id="q4_1_5" value="5">
+                                <label for="q4_1_5">5</label>
+                                <div class="mobile-label">Automated</div>
+                            </div>
+                        </div>
+                        <div class="likert-labels">
+                            <span>No standards</span>
+                            <span>Documented standards</span>
+                            <span>Automated quality gates</span>
+                        </div>
+                    </div>
+                    
+                    <div class="question">
+                        <div class="question-text">4.2 Is there ongoing monitoring of AI system performance?</div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q4_2" id="q4_2_1" value="1">
+                                <label for="q4_2_1">1</label>
+                                <div class="mobile-label">None</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q4_2" id="q4_2_2" value="2">
+                                <label for="q4_2_2">2</label>
+                                <div class="mobile-label">Ad hoc</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q4_2" id="q4_2_3" value="3">
+                                <label for="q4_2_3">3</label>
+                                <div class="mobile-label">Regular reviews</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q4_2" id="q4_2_4" value="4">
+                                <label for="q4_2_4">4</label>
+                                <div class="mobile-label">Continuous</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q4_2" id="q4_2_5" value="5">
+                                <label for="q4_2_5">5</label>
+                                <div class="mobile-label">Real-time</div>
+                            </div>
+                        </div>
+                        <div class="likert-labels">
+                            <span>No monitoring</span>
+                            <span>Periodic reviews</span>
+                            <span>Real-time dashboards</span>
+                        </div>
+                    </div>
+                    
+                    <div class="question">
+                        <div class="question-text">4.3 Are improvement processes in place for AI systems?</div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q4_3" id="q4_3_1" value="1">
+                                <label for="q4_3_1">1</label>
+                                <div class="mobile-label">None</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q4_3" id="q4_3_2" value="2">
+                                <label for="q4_3_2">2</label>
+                                <div class="mobile-label">Reactive</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q4_3" id="q4_3_3" value="3">
+                                <label for="q4_3_3">3</label>
+                                <div class="mobile-label">Planned</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q4_3" id="q4_3_4" value="4">
+                                <label for="q4_3_4">4</label>
+                                <div class="mobile-label">Systematic</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q4_3" id="q4_3_5" value="5">
+                                <label for="q4_3_5">5</label>
+                                <div class="mobile-label">Self-improving</div>
+                            </div>
+                        </div>
+                        <div class="likert-labels">
+                            <span>React to problems</span>
+                            <span>Regular optimization cycles</span>
+                            <span>Continuous improvement loops</span>
+                        </div>
+                    </div>
+                    
+                    <div class="question">
+                        <div class="question-text">4.4 Do you have compliance and audit capabilities for AI?</div>
+                        <div class="likert-scale">
+                            <div class="likert-option">
+                                <input type="radio" name="q4_4" id="q4_4_1" value="1">
+                                <label for="q4_4_1">1</label>
+                                <div class="mobile-label">None</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q4_4" id="q4_4_2" value="2">
+                                <label for="q4_4_2">2</label>
+                                <div class="mobile-label">Minimal</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q4_4" id="q4_4_3" value="3">
+                                <label for="q4_4_3">3</label>
+                                <div class="mobile-label">Basic</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q4_4" id="q4_4_4" value="4">
+                                <label for="q4_4_4">4</label>
+                                <div class="mobile-label">Good</div>
+                            </div>
+                            <div class="likert-option">
+                                <input type="radio" name="q4_4" id="q4_4_5" value="5">
+                                <label for="q4_4_5">5</label>
+                                <div class="mobile-label">Comprehensive</div>
+                            </div>
+                        </div>
+                        <div class="likert-labels">
+                            <span>No audit trail</span>
+                            <span>Basic logging</span>
+                            <span>Full audit/compliance</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="calculate-btn">Calculate Your Readiness Score</button>
+            </form>
+            
+            <div id="results" class="results">
+                <h2>Your Context Readiness Results</h2>
+                
+                <div class="chart-container">
+                    <canvas id="radarChart"></canvas>
+                </div>
+                
+                <div class="dimension-scores" id="scores"></div>
+                
+                <div class="interpretation" id="interpretation"></div>
+                
+                <div class="action-buttons">
+                    <button class="download-btn" onclick="downloadResults()">Download Results</button>
+                    <button class="reset-btn" onclick="resetAssessment()">Take Assessment Again</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>About Making AI Work</strong></p>
+            <p>A thought leadership series on closing the AI deployment-to-value gap through context engineering.</p>
+            <p>By <a href="https://www.linkedin.com/in/thomas-larson-211a1981/" target="_blank">Thomas Larson</a>, Enterprise AI Strategist</p>
+            <p style="margin-top: 15px; font-size: 0.9em; opacity: 0.8;">© 2026 All rights reserved. Your assessment data stays private and is never sent to a server.</p>
+        </div>
+    </div>
+    
+    <script>
+        let radarChart = null;
+        
+        const dimensionQuestions = {
+            'Data Integration': ['q1_1', 'q1_2', 'q1_3', 'q1_4'],
+            'Organizational Alignment': ['q2_1', 'q2_2', 'q2_3', 'q2_4'],
+            'System Architecture': ['q3_1', 'q3_2', 'q3_3', 'q3_4'],
+            'Governance': ['q4_1', 'q4_2', 'q4_3', 'q4_4']
+        };
+        
+        // Wait for DOM to be ready
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('assessmentForm');
+            
+            if (!form) {
+                console.error('Assessment form not found');
+                return;
+            }
+            
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                console.log('Form submitted');
+                
+                try {
+                    // Validate all questions are answered
+                    const allQuestions = Object.values(dimensionQuestions).flat();
+                    const unanswered = [];
+                    
+                    for (const q of allQuestions) {
+                        const checked = document.querySelector(`input[name="${q}"]:checked`);
+                        if (!checked) {
+                            unanswered.push(q);
+                        }
+                    }
+                    
+                    if (unanswered.length > 0) {
+                        alert(`Please answer all questions before calculating your score. ${unanswered.length} question(s) remaining.`);
+                        // Scroll to first unanswered question
+                        const firstUnanswered = document.querySelector(`input[name="${unanswered[0]}"]`);
+                        if (firstUnanswered) {
+                            firstUnanswered.closest('.question').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                        return false;
+                    }
+                    
+                    calculateScores();
+                    return false;
+                } catch (error) {
+                    console.error('Error in form submission:', error);
+                    alert('An error occurred. Please check the console for details.');
+                    return false;
+                }
+            });
+        });
+        
+        function calculateScores() {
+            const scores = {};
+            
+            // Calculate average score for each dimension
+            for (const [dimension, questions] of Object.entries(dimensionQuestions)) {
+                let total = 0;
+                for (const q of questions) {
+                    const value = parseInt(document.querySelector(`input[name="${q}"]:checked`).value);
+                    total += value;
+                }
+                scores[dimension] = (total / questions.length).toFixed(1);
+            }
+            
+            displayResults(scores);
+        }
+        
+        function displayResults(scores) {
+            const resultsDiv = document.getElementById('results');
+            const scoresDiv = document.getElementById('scores');
+            const interpretationDiv = document.getElementById('interpretation');
+            
+            // Clear previous results
+            scoresDiv.innerHTML = '';
+            
+            // Display dimension scores
+            for (const [dimension, score] of Object.entries(scores)) {
+                const rating = getRating(parseFloat(score));
+                scoresDiv.innerHTML += `
+                    <div class="dimension-score ${rating}">
+                        <span class="score-label">${dimension}</span>
+                        <span class="score-value ${rating}">${score}</span>
+                    </div>
+                `;
+            }
+            
+            // Create radar chart
+            createRadarChart(scores);
+            
+            // Generate interpretation
+            const interpretation = generateInterpretation(scores);
+            interpretationDiv.innerHTML = interpretation;
+            
+            // Show results
+            resultsDiv.classList.add('show');
+            resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+        
+        function getRating(score) {
+            if (score < 2.6) return 'red';
+            if (score < 4.0) return 'yellow';
+            return 'green';
+        }
+        
+        function createRadarChart(scores) {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            
+            if (radarChart) {
+                radarChart.destroy();
+            }
+            
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: Object.keys(scores),
+                    datasets: [{
+                        label: 'Your Scores',
+                        data: Object.values(scores).map(s => parseFloat(s)),
+                        backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(59, 130, 246, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(59, 130, 246, 1)'
+                    }]
+                },
+                options: {
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 5,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+        
+        function getDimensionInsight(dimension, level) {
+            const insights = {
+                'Data Integration & Accessibility': {
+                    'critical': 'Data architecture issues cause 70-85% of AI project failures. Your organization likely faces the "80/20 problem"—only 20% of business-critical information exists in structured, AI-accessible formats. This is your highest-priority gap.',
+                    'building': 'Improving data integration is your path to the 67% success rate of purchased solutions vs. 22% for internal builds. Focus on real-time integration and data quality validation.',
+                    'strong': 'Your data foundation enables the documented outcomes: 60% latency reduction, 40% infrastructure cost savings. Continue optimizing for real-time access and quality controls.'
+                },
+                'Organizational Alignment & Process': {
+                    'critical': 'Without organizational alignment, you\'re building technology solutions to people problems. BCG research shows transformation (70% of effort) matters more than technology (20%) or algorithms (10%). Most companies invert this ratio.',
+                    'building': 'Process documentation and stakeholder alignment will unlock your 2.5x adoption advantage. Well-engineered context reduces dependency on individual user competency—critical for scaling beyond power users.',
+                    'strong': 'Your organizational alignment explains your success. Continue investing in the "M-shaped supervisors" and "T-shaped experts" emerging as the new AI-enabled workforce structure.'
+                },
+                'System Architecture & Technical Foundation': {
+                    'critical': 'Architecture gaps create the "prompt lottery"—unacceptable quality variation based on individual user skill. 44% of quality issues stem from missing context, not model capability. This is where enterprises fail.',
+                    'building': 'Strengthening architecture will move you from 30% success rates to 90%+. Focus on the context stack: system instructions, memory, retrieved knowledge, tools, and structured outputs as orchestrated infrastructure.',
+                    'strong': 'Your architecture enables the 95%+ accuracy vs. 70% baseline that drives adoption. Model Context Protocol (MCP) adoption will further strengthen integration and vendor flexibility.'
+                },
+                'Governance & Quality Assurance': {
+                    'critical': 'Gartner predicts 40%+ of agentic AI projects will be canceled by 2027 due to inadequate risk controls. Governance isn\'t bureaucracy—it\'s the difference between production systems and abandoned pilots.',
+                    'building': 'Governance maturation will prepare you for regulated industry deployment. Finance and healthcare organizations deploying AI have solved the governance challenge you\'re now addressing.',
+                    'strong': 'Your governance framework enables trust at scale. Consider this competitive advantage: organizations can copy your models but not your institutional governance and quality controls.'
+                }
+            };
+            
+            return insights[dimension]?.[level] || `Focus on improving ${dimension} to strengthen your overall context readiness.`;
+        }
+        
+        function generateInterpretation(scores) {
+            // Get sorted dimensions (lowest to highest)
+            const sortedDimensions = Object.entries(scores)
+                .sort((a, b) => parseFloat(a[1]) - parseFloat(b[1]));
+            
+            const lowestDimension = sortedDimensions[0];
+            const secondLowest = sortedDimensions[1];
+            
+            const avgScore = Object.values(scores).reduce((a, b) => parseFloat(a) + parseFloat(b)) / 4;
+            
+            let overall = '';
+            let dimensionAnalysis = '';
+            let impactData = '';
+            let nextSteps = '';
+            
+            if (avgScore < 2.6) {
+                overall = '<h3 style="color: #ef4444;">Critical Gaps - High Risk of AI Failure</h3><p>Your organization faces significant context readiness challenges that place you among the <strong>60% of companies classified as "lagging"</strong> despite AI investment. Without addressing these fundamentals, your AI initiatives face the industry reality: <strong>95% of pilots fail to deliver measurable ROI</strong>, and you risk joining the 42% of organizations that abandoned most AI initiatives in 2025.</p>';
+                
+                dimensionAnalysis = `
+                    <div style="margin: 20px 0; padding: 15px; background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 4px;">
+                        <h4 style="color: #991b1b; margin-bottom: 10px;">Critical Gap Analysis</h4>
+                        <p style="margin-bottom: 8px;"><strong>Primary Concern: ${lowestDimension[0]}</strong> (scored ${lowestDimension[1]}/5.0)</p>
+                        <p style="margin-bottom: 8px;"><strong>Secondary Concern: ${secondLowest[0]}</strong> (scored ${secondLowest[1]}/5.0)</p>
+                        <p style="color: #7f1d1d; font-size: 0.95em; margin-top: 12px;">
+                            ${getDimensionInsight(lowestDimension[0], 'critical')}
+                        </p>
+                    </div>
+                `;
+                
+                impactData = `
+                    <div style="margin: 20px 0; padding: 15px; background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 4px;">
+                        <h4 style="color: #92400e; margin-bottom: 10px;">What's At Stake</h4>
+                        <p style="margin-bottom: 6px;"><strong>Research shows organizations at your maturity level experience:</strong></p>
+                        <ul style="margin-left: 20px; color: #78350f;">
+                            <li>Only 20% of AI projects remain operational beyond 3 years (vs. 45% for high-maturity organizations)</li>
+                            <li>70-85% of AI failures trace to data architecture issues—not model capability</li>
+                            <li>Internal builds succeed only 22% of the time (vs. 67% for purchased solutions)</li>
+                            <li>User adoption rates remain below 30%, limiting any potential ROI</li>
+                        </ul>
+                    </div>
+                `;
+                
+                nextSteps = `
+                    <h3>Recommended Next Steps:</h3>
+                    <ol style="margin-left: 20px;">
+                        <li><strong>Executive Alignment First:</strong> Conduct stakeholder workshop using BCG's 70/20/10 framework—70% focus on people/transformation, 20% on data infrastructure, 10% on algorithms. Most organizations invert this ratio, which explains the 95% failure rate.</li>
+                        <li><strong>Stop the Bleeding:</strong> Pause new AI pilots until you address foundational gaps in ${lowestDimension[0]} and ${secondLowest[0]}. Each failed pilot erodes organizational confidence and wastes limited transformation capital.</li>
+                        <li><strong>Assign Accountability:</strong> Consider appointing an AI Product Owner or transformation lead—organizations with dedicated AI leadership report ~10% higher ROI on AI spend.</li>
+                        <li><strong>Start with Context Audit:</strong> Map your existing data sources, workflows, and institutional knowledge. MIT research shows 80% of business-critical information exists only in unstructured formats—this is your context engineering gap.</li>
+                    </ol>
+                `;
+                
+            } else if (avgScore < 4.0) {
+                overall = '<h3 style="color: #f59e0b;">Building Blocks in Place - Tactical Gaps Remain</h3><p>Your organization shows progress but sits in the middle 35% of companies—beyond lagging but not yet leading. You have building blocks for selective pilot success, but significant gaps will limit your ability to scale pilots into production systems. The critical question: can you close gaps before the <strong>widening AI maturity gap</strong> leaves you competing against organizations with superior contextual intelligence?</p>';
+                
+                dimensionAnalysis = `
+                    <div style="margin: 20px 0; padding: 15px; background: #fef3c7; border-left: 4px solid #f59e0b; border-radius: 4px;">
+                        <h4 style="color: #92400e; margin-bottom: 10px;">Gap Analysis</h4>
+                        <p style="margin-bottom: 8px;"><strong>Primary Focus Area: ${lowestDimension[0]}</strong> (scored ${lowestDimension[1]}/5.0)</p>
+                        <p style="margin-bottom: 8px;"><strong>Secondary Focus: ${secondLowest[0]}</strong> (scored ${secondLowest[1]}/5.0)</p>
+                        <p style="color: #78350f; font-size: 0.95em; margin-top: 12px;">
+                            ${getDimensionInsight(lowestDimension[0], 'building')}
+                        </p>
+                    </div>
+                `;
+                
+                impactData = `
+                    <div style="margin: 20px 0; padding: 15px; background: #dbeafe; border-left: 4px solid #3b82f6; border-radius: 4px;">
+                        <h4 style="color: #1e3a8a; margin-bottom: 10px;">Proven ROI at Your Maturity Level</h4>
+                        <p style="margin-bottom: 6px;"><strong>Organizations that address these gaps systematically achieve:</strong></p>
+                        <ul style="margin-left: 20px; color: #1e40af;">
+                            <li><strong>2.5x higher adoption rates</strong> when context engineering reduces the "prompt lottery" effect</li>
+                            <li><strong>40% reduction in AI prep time</strong> (documented in financial services)</li>
+                            <li><strong>45% ticket deflection</strong> in customer service implementations (Reddit case study)</li>
+                            <li><strong>Success rates improving from ~30% to 90%+</strong> after implementing context engineering principles</li>
+                        </ul>
+                        <p style="margin-top: 10px; color: #1e40af; font-size: 0.95em;">
+                            Note: Well-engineered context achieves <strong>95%+ accuracy</strong> vs. 70% for basic implementations—and users adopt high-accuracy systems while abandoning low-accuracy ones.
+                        </p>
+                    </div>
+                `;
+                
+                nextSteps = `
+                    <h3>Recommended Next Steps:</h3>
+                    <ol style="margin-left: 20px;">
+                        <li><strong>Targeted Improvement:</strong> Focus resources on strengthening ${lowestDimension[0]} and ${secondLowest[0]}. Use the 8-12-24 rule emerging among leaders: ship improvements in 8 weeks, measure in 12, scale in 24.</li>
+                        <li><strong>Document What Works:</strong> Your higher-scoring dimensions represent organizational strengths. Capture these as reusable patterns—institutional knowledge is your competitive moat, not model selection.</li>
+                        <li><strong>Strategic Pilot Selection:</strong> Choose use cases that work within current constraints rather than exposing gaps. Success builds confidence and funding for broader transformation.</li>
+                        <li><strong>Measurement Framework:</strong> Establish metrics beyond "models deployed"—track adoption rates, accuracy improvement, time savings, and user satisfaction. McKinsey's 1:1 rule: plan to spend $1 on adoption/scaling for every $1 on development.</li>
+                        <li><strong>Context Engineering Investment:</strong> Shift from prompt engineering (tactical, 5% of impact) to context engineering (strategic, 95% of impact). This is the discipline that separates pilots from production systems.</li>
+                    </ol>
+                `;
+                
+            } else {
+                overall = '<h3 style="color: #10b981;">Strong Foundation - Ready to Scale</h3><p>Your organization demonstrates context readiness capabilities that position you among the <strong>5% of "AI future-built" companies</strong>. Organizations at your maturity level report <strong>5x revenue increases and 3x cost reductions</strong> compared to lagging peers. You have the fundamentals in place to move from pilots to production systems that deliver measurable business value and create defensible competitive advantages through superior contextual intelligence.</p>';
+                
+                dimensionAnalysis = `
+                    <div style="margin: 20px 0; padding: 15px; background: #d1fae5; border-left: 4px solid #10b981; border-radius: 4px;">
+                        <h4 style="color: #065f46; margin-bottom: 10px;">Optimization Opportunities</h4>
+                        <p style="margin-bottom: 8px;"><strong>Refinement Area: ${lowestDimension[0]}</strong> (scored ${lowestDimension[1]}/5.0)</p>
+                        <p style="margin-bottom: 8px;"><strong>Secondary Focus: ${secondLowest[0]}</strong> (scored ${secondLowest[1]}/5.0)</p>
+                        <p style="color: #064e3b; font-size: 0.95em; margin-top: 12px;">
+                            ${getDimensionInsight(lowestDimension[0], 'strong')}
+                        </p>
+                    </div>
+                `;
+                
+                impactData = `
+                    <div style="margin: 20px 0; padding: 15px; background: #dbeafe; border-left: 4px solid #3b82f6; border-radius: 4px;">
+                        <h4 style="color: #1e3a8a; margin-bottom: 10px;">Expected Outcomes at Your Maturity Level</h4>
+                        <p style="margin-bottom: 6px;"><strong>Leaders at your readiness level consistently achieve:</strong></p>
+                        <ul style="margin-left: 20px; color: #1e40af;">
+                            <li><strong>$2.3M average annual savings</strong> from context-engineered AI systems</li>
+                            <li><strong>5x more value per user</strong> compared to basic implementations</li>
+                            <li><strong>77% positive ROI within first year</strong> (financial services benchmark)</li>
+                            <li><strong>60% reduction in data latency</strong> (European bank case study)</li>
+                            <li><strong>95%+ accuracy rates</strong> vs. 70% baseline, driving sustainable adoption</li>
+                        </ul>
+                        <p style="margin-top: 10px; color: #1e40af; font-size: 0.95em;">
+                            Key differentiator: You've moved from "trying things" to systematic context engineering—the discipline that creates competitive moats through institutional knowledge capture.
+                        </p>
+                    </div>
+                `;
+                
+                nextSteps = `
+                    <h3>Recommended Next Steps:</h3>
+                    <ol style="margin-left: 20px;">
+                        <li><strong>Scale Aggressively:</strong> You've proven the model—now expand successful pilots to broader organizational deployment. Leaders allocate 64% more IT budget to AI and move 2x faster on deployment.</li>
+                        <li><strong>Build Center of Excellence:</strong> Establish a context engineering capability center to maintain institutional knowledge, standardize best practices, and accelerate new use case deployment. This becomes your competitive moat.</li>
+                        <li><strong>Self-Improving Systems:</strong> Implement write-back memory cycles where every interaction strengthens contextual understanding. This creates the network effect: more usage → better context → more value → more usage.</li>
+                        <li><strong>Advanced Capabilities:</strong> Explore multi-agent orchestration, Model Context Protocol (MCP) implementations, and context-aware personalization—you have the foundation for frontier capabilities.</li>
+                        <li><strong>Strategic Differentiation:</strong> Your competitors can copy your models but not your organizational context. Continue investing in context engineering as strategic capability, not IT project.</li>
+                    </ol>
+                `;
+            }
+            
+            return overall + dimensionAnalysis + impactData + nextSteps;
+        }
+        
+        function downloadResults() {
+            const scores = {};
+            for (const [dimension, questions] of Object.entries(dimensionQuestions)) {
+                let total = 0;
+                for (const q of questions) {
+                    const value = parseInt(document.querySelector(`input[name="${q}"]:checked`).value);
+                    total += value;
+                }
+                scores[dimension] = (total / questions.length).toFixed(1);
+            }
+            
+            const avgScore = Object.values(scores).reduce((a, b) => parseFloat(a) + parseFloat(b)) / 4;
+            
+            let report = `CONTEXT READINESS SCORECARD - RESULTS
+============================================
+
+Organization: [Your Company]
+Date: ${new Date().toLocaleDateString()}
+Completed by: [Your Name]
+
+DIMENSION SCORES
+================
+`;
+            
+            for (const [dimension, score] of Object.entries(scores)) {
+                const rating = getRating(parseFloat(score));
+                const ratingText = rating === 'red' ? 'CRITICAL' : rating === 'yellow' ? 'BUILDING' : 'STRONG';
+                report += `${dimension}: ${score}/5.0 (${ratingText})\n`;
+            }
+            
+            report += `\nOVERALL AVERAGE: ${avgScore.toFixed(1)}/5.0\n\n`;
+            
+            report += `INTERPRETATION
+==============
+`;
+            
+            if (avgScore < 2.6) {
+                report += `Status: CRITICAL GAPS - High Risk of AI Failure
+
+Your organization faces significant context readiness challenges. Without addressing these fundamentals, AI investments are likely to fail to deliver measurable ROI.
+
+IMMEDIATE ACTIONS REQUIRED:
+- Conduct executive stakeholder alignment workshop
+- Pause new AI pilots until foundational gaps addressed
+- Assign ownership for context capability building
+- Consider engaging external expertise
+`;
+            } else if (avgScore < 4.0) {
+                report += `Status: BUILDING BLOCKS IN PLACE - Tactical Gaps Remain
+
+Your organization has made progress but significant gaps could limit scale. You are positioned for selective pilot success but not yet ready for production deployment at scale.
+
+RECOMMENDED NEXT STEPS:
+- Prioritize improvements in lowest-scoring dimensions
+- Document and standardize successful practices
+- Select constrained pilot use cases
+- Build measurement framework
+`;
+            } else {
+                report += `Status: STRONG FOUNDATION - Ready to Scale
+
+Your organization demonstrates context readiness capabilities that position you among AI leaders. You have fundamentals in place to move from pilots to production.
+
+RECOMMENDED NEXT STEPS:
+- Expand successful pilots to broader deployment
+- Document and scale best practices
+- Build Center of Excellence
+- Explore advanced capabilities
+`;
+            }
+            
+            report += `\n\nABOUT THIS ASSESSMENT
+=====================
+Part of the "Making AI Work" series by Thomas Larson
+Enterprise AI Strategy focused on closing the deployment-to-value gap
+
+For more insights: linkedin.com/in/thomas-larson-211a1981
+Next in series: "The Context Stack - Your AI's Operating System"
+`;
+            
+            // Create download
+            const blob = new Blob([report], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'Context_Readiness_Scorecard_Results.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+        
+        function resetAssessment() {
+            document.getElementById('assessmentForm').reset();
+            document.getElementById('results').classList.remove('show');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
