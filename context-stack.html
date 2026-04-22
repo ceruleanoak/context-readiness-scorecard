@@ -1,0 +1,1710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Context Stack – Making AI Work | Thomas Larson</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+:root {
+  --bg:          #f1f5f9;
+  --surface:     #ffffff;
+  --border:      #e2e8f0;
+  --border-2:    #cbd5e1;
+  --text:        #0f172a;
+  --text-2:      #334155;
+  --text-3:      #64748b;
+  --text-4:      #94a3b8;
+  --blue:        #2563eb;
+  --blue-dk:     #1d4ed8;
+  --blue-bg:     #eff6ff;
+  --blue-mid:    #bfdbfe;
+  --red:         #dc2626;
+  --red-bg:      #fef2f2;
+  --red-border:  #fecaca;
+  --amber:       #b45309;
+  --amber-bg:    #fffbeb;
+  --amber-border:#fde68a;
+  --teal:        #0f766e;
+  --teal-bg:     #f0fdfa;
+  --teal-border: #99f6e4;
+  --green:       #15803d;
+  --green-bg:    #f0fdf4;
+
+  /* Layer identity colors */
+  --l1:          #1d4ed8;
+  --l1-bg:       #eff6ff;
+  --l1-mid:      #bfdbfe;
+  --l2:          #6d28d9;
+  --l2-bg:       #f5f3ff;
+  --l2-mid:      #ddd6fe;
+  --l3:          #c2410c;
+  --l3-bg:       #fff7ed;
+  --l3-mid:      #fed7aa;
+  --l4:          #0e7490;
+  --l4-bg:       #ecfeff;
+  --l4-mid:      #a5f3fc;
+}
+
+body {
+  font-family: 'Figtree', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ─── STICKY SERIES BAR ─── */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+.series-bar-inner {
+  max-width: 1100px; margin: 0 auto; padding: 0 28px;
+  height: 50px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px;
+}
+.series-tag {
+  font-size: 12px; color: var(--text-3);
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 0.03em;
+}
+.series-tag a { color: var(--blue); text-decoration: none; }
+.series-tag a:hover { text-decoration: underline; }
+.bar-actions { display: flex; gap: 8px; }
+.bar-btn {
+  font-size: 12px; font-weight: 500; font-family: 'Figtree', sans-serif;
+  padding: 5px 14px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--text-2); transition: all 0.15s;
+  white-space: nowrap;
+}
+.bar-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-bg); }
+
+/* ─── PAGE HERO ─── */
+.page-hero {
+  background: linear-gradient(140deg, #0b1f44 0%, #162f6a 45%, #1d4ed8 100%);
+  padding: 60px 0 52px;
+  position: relative;
+  overflow: hidden;
+}
+.page-hero::before {
+  content: '02';
+  position: absolute; right: 4%; top: -10px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 260px; font-weight: 500;
+  color: rgba(255,255,255,0.035); line-height: 1;
+  pointer-events: none; user-select: none;
+}
+.page-hero::after {
+  content: '';
+  position: absolute; bottom: 0; left: 0; right: 0;
+  height: 1px; background: rgba(255,255,255,0.08);
+}
+.page-hero-inner {
+  max-width: 1100px; margin: 0 auto; padding: 0 28px;
+  position: relative; z-index: 1;
+}
+.hero-eyebrow {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: rgba(255,255,255,0.5); margin-bottom: 18px;
+  display: flex; align-items: center; gap: 12px;
+}
+.hero-eyebrow::before {
+  content: ''; display: block;
+  width: 28px; height: 1px; background: rgba(255,255,255,0.3);
+}
+.hero-title {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-size: clamp(38px, 5vw, 58px);
+  color: white; line-height: 1.08;
+  letter-spacing: -0.01em;
+  margin-bottom: 20px;
+}
+.hero-subtitle {
+  font-size: 16px; color: rgba(255,255,255,0.68);
+  max-width: 580px; line-height: 1.65;
+}
+
+/* ─── IMPORT STRIP ─── */
+.import-strip {
+  background: var(--blue-bg);
+  border-bottom: 1px solid var(--blue-mid);
+  padding: 14px 0;
+}
+.import-strip-inner {
+  max-width: 1100px; margin: 0 auto; padding: 0 28px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+}
+.import-strip p { font-size: 13px; color: var(--text-2); }
+.import-strip p strong { color: var(--text); }
+.import-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.import-actions a {
+  font-size: 12px; color: var(--blue); text-decoration: none;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.import-actions a:hover { text-decoration: underline; }
+.btn-import {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 600; font-family: 'Figtree', sans-serif;
+  padding: 7px 16px; border-radius: 7px; cursor: pointer;
+  background: var(--blue); color: white; border: none;
+  transition: background 0.15s;
+}
+.btn-import:hover { background: var(--blue-dk); }
+.import-status { display: none; align-items: center; gap: 10px; }
+.import-status.visible { display: flex; }
+.import-status-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 500; padding: 4px 12px;
+  background: var(--green-bg); color: var(--green);
+  border: 1px solid #86efac; border-radius: 20px;
+}
+.import-status-pill::before { content: '✓'; font-weight: 700; }
+.btn-clear {
+  font-size: 12px; color: var(--text-3); background: none;
+  border: none; cursor: pointer; text-decoration: underline; padding: 0;
+}
+.btn-clear:hover { color: var(--red); }
+#file-input { display: none; }
+
+/* ─── MAIN LAYOUT ─── */
+.main { max-width: 1100px; margin: 0 auto; padding: 0 28px; }
+
+/* ─── SECTION SCAFFOLDING ─── */
+.page-section {
+  padding: 56px 0;
+  border-top: 1px solid var(--border);
+}
+.page-section:first-child { border-top: none; padding-top: 40px; }
+
+.section-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; font-weight: 500; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--blue);
+  margin-bottom: 10px;
+}
+.section-heading {
+  font-size: 26px; font-weight: 700; color: var(--text);
+  letter-spacing: -0.01em; margin-bottom: 8px;
+}
+.section-subhead {
+  font-size: 15px; color: var(--text-3); line-height: 1.6;
+  max-width: 620px;
+}
+.section-header-row {
+  margin-bottom: 32px;
+}
+
+/* ─── TOOL SECTION: EXPLORATION BOX ─── */
+.exploration-intro {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.exploration-intro p {
+  font-size: 14px; color: var(--text-3); max-width: 500px; line-height: 1.55;
+}
+.layer-progress {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; color: var(--text-4); letter-spacing: 0.05em;
+  background: var(--surface); border: 1px solid var(--border);
+  padding: 6px 12px; border-radius: 20px; white-space: nowrap;
+}
+.layer-progress strong { color: var(--text-2); }
+
+.tool-layout {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 820px) {
+  .tool-layout { grid-template-columns: 1fr; }
+}
+
+/* ─── LAYER NAV (NOT sticky) ─── */
+.layer-nav {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.layer-nav-header {
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--border);
+  font-size: 10px; font-weight: 600; color: var(--text-4);
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+
+/* Layer nav buttons */
+.layer-btn {
+  display: block; width: 100%; text-align: left;
+  padding: 16px; border: none; background: var(--surface);
+  cursor: pointer; transition: background 0.14s;
+  border-bottom: 1px solid var(--border);
+  position: relative; overflow: hidden;
+}
+.layer-btn:last-of-type { border-bottom: none; }
+
+.layer-btn::before {
+  content: '';
+  position: absolute; left: 0; top: 0; bottom: 0;
+  width: 0; transition: width 0.2s;
+}
+.layer-btn.active::before { width: 4px; }
+.layer-btn.l1.active::before { background: var(--l1); }
+.layer-btn.l2.active::before { background: var(--l2); }
+.layer-btn.l3.active::before { background: var(--l3); }
+.layer-btn.l4.active::before { background: var(--l4); }
+
+.layer-btn.l1:hover, .layer-btn.l1.active { background: var(--l1-bg); }
+.layer-btn.l2:hover, .layer-btn.l2.active { background: var(--l2-bg); }
+.layer-btn.l3:hover, .layer-btn.l3.active { background: var(--l3-bg); }
+.layer-btn.l4:hover, .layer-btn.l4.active { background: var(--l4-bg); }
+
+.layer-btn-row { display: flex; align-items: center; gap: 12px; }
+
+.layer-badge {
+  width: 34px; height: 34px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; font-weight: 500;
+  color: white; flex-shrink: 0;
+  transition: transform 0.15s;
+}
+.layer-btn.active .layer-badge { transform: scale(1.05); }
+.layer-btn.l1 .layer-badge { background: var(--l1); }
+.layer-btn.l2 .layer-badge { background: var(--l2); }
+.layer-btn.l3 .layer-badge { background: var(--l3); }
+.layer-btn.l4 .layer-badge { background: var(--l4); }
+
+.layer-text { flex: 1; min-width: 0; }
+.layer-name {
+  font-size: 14px; font-weight: 600; color: var(--text-2);
+  letter-spacing: -0.01em;
+}
+.layer-btn.active .layer-name { color: var(--text); }
+.layer-tagline {
+  font-size: 11px; color: var(--text-4); margin-top: 1px;
+  line-height: 1.4;
+}
+
+.layer-score-chip {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px; font-weight: 500; color: var(--text-4);
+  flex-shrink: 0;
+}
+.layer-score-chip.critical { color: var(--red); }
+.layer-score-chip.building { color: var(--amber); }
+.layer-score-chip.developing { color: var(--teal); }
+.layer-score-chip.advanced { color: var(--green); }
+
+.layer-bar-wrap { margin: 10px 0 4px; padding-left: 46px; display: none; }
+.layer-bar-wrap.visible { display: block; }
+.layer-bar-track {
+  height: 3px; background: var(--border); border-radius: 2px; overflow: hidden;
+}
+.layer-bar-fill {
+  height: 100%; border-radius: 2px; transition: width 0.5s ease;
+}
+.layer-bar-fill.critical { background: var(--red); }
+.layer-bar-fill.building { background: var(--amber); }
+.layer-bar-fill.developing { background: var(--teal); }
+.layer-bar-fill.advanced { background: var(--green); }
+
+.status-badge {
+  display: none; margin-left: 46px; margin-top: 5px;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.06em;
+  padding: 2px 8px; border-radius: 3px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.status-badge.visible { display: inline-block; }
+.status-badge.critical { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+.status-badge.building { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
+.status-badge.developing { background: var(--teal-bg); color: var(--teal); border: 1px solid var(--teal-border); }
+.status-badge.advanced { background: var(--green-bg); color: var(--green); border: 1px solid #bbf7d0; }
+
+/* Stack mini-viz at bottom of nav */
+.nav-stack-viz {
+  padding: 16px; border-top: 1px solid var(--border);
+  background: var(--bg);
+}
+.nav-stack-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--text-4); margin-bottom: 10px;
+}
+.stack-bars { display: flex; flex-direction: column; gap: 4px; }
+.stack-bar-row {
+  display: flex; align-items: center; gap: 8px;
+}
+.stack-bar-chip {
+  height: 6px; border-radius: 3px; flex: 1;
+  opacity: 0.3; transition: opacity 0.2s;
+}
+.stack-bar-chip.active { opacity: 1; }
+.stack-bar-chip.l1 { background: var(--l1); }
+.stack-bar-chip.l2 { background: var(--l2); }
+.stack-bar-chip.l3 { background: var(--l3); }
+.stack-bar-chip.l4 { background: var(--l4); }
+.stack-bar-name {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; color: var(--text-4); width: 70px;
+  transition: color 0.2s;
+}
+.stack-bar-name.active { color: var(--text-2); font-weight: 500; }
+
+/* ─── DETAIL PANELS ─── */
+.layer-detail { display: none; animation: panelIn 0.22s ease; }
+.layer-detail.visible { display: block; }
+
+@keyframes panelIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.detail-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.detail-header {
+  padding: 24px 28px 20px;
+  border-bottom: 1px solid var(--border);
+  position: relative; overflow: hidden;
+}
+.detail-header::after {
+  content: attr(data-num);
+  position: absolute; right: 20px; top: 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 72px; font-weight: 500;
+  line-height: 1; pointer-events: none; user-select: none;
+  opacity: 0.055;
+}
+
+/* Layer-specific header theming */
+.detail-card.l1 .detail-header { background: var(--l1-bg); border-top: 3px solid var(--l1); }
+.detail-card.l2 .detail-header { background: var(--l2-bg); border-top: 3px solid var(--l2); }
+.detail-card.l3 .detail-header { background: var(--l3-bg); border-top: 3px solid var(--l3); }
+.detail-card.l4 .detail-header { background: var(--l4-bg); border-top: 3px solid var(--l4); }
+
+.detail-layer-tag {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-bottom: 10px;
+}
+.detail-layer-pip {
+  width: 8px; height: 8px; border-radius: 50%;
+}
+.l1 .detail-layer-pip { background: var(--l1); }
+.l2 .detail-layer-pip { background: var(--l2); }
+.l3 .detail-layer-pip { background: var(--l3); }
+.l4 .detail-layer-pip { background: var(--l4); }
+
+.detail-layer-num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; letter-spacing: 0.06em;
+}
+.l1 .detail-layer-num { color: var(--l1); }
+.l2 .detail-layer-num { color: var(--l2); }
+.l3 .detail-layer-num { color: var(--l3); }
+.l4 .detail-layer-num { color: var(--l4); }
+
+.detail-title {
+  font-size: 22px; font-weight: 700; color: var(--text);
+  letter-spacing: -0.01em; margin-bottom: 6px;
+}
+.detail-question {
+  font-size: 14px; color: var(--text-3); font-style: italic; line-height: 1.5;
+}
+
+.detail-body { padding: 24px 28px; }
+
+/* Score banner */
+.score-banner {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px 20px; border-radius: 8px; margin-bottom: 24px;
+  border: 1px solid var(--border);
+}
+.score-banner.critical { background: var(--red-bg); border-color: var(--red-border); }
+.score-banner.building { background: var(--amber-bg); border-color: var(--amber-border); }
+.score-banner.developing { background: var(--teal-bg); border-color: var(--teal-border); }
+.score-banner.advanced { background: var(--green-bg); border-color: #bbf7d0; }
+
+.score-big {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 28px; font-weight: 500; line-height: 1;
+}
+.score-banner.critical .score-big { color: var(--red); }
+.score-banner.building .score-big { color: var(--amber); }
+.score-banner.developing .score-big { color: var(--teal); }
+.score-banner.advanced .score-big { color: var(--green); }
+
+.score-text { flex: 1; }
+.score-status-label {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; margin-bottom: 3px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.score-banner.critical .score-status-label { color: var(--red); }
+.score-banner.building .score-status-label { color: var(--amber); }
+.score-banner.developing .score-status-label { color: var(--teal); }
+.score-banner.advanced .score-status-label { color: var(--green); }
+
+.score-interp { font-size: 13px; color: var(--text-2); line-height: 1.5; }
+
+/* Content blocks */
+.content-block { margin-bottom: 24px; }
+.content-block:last-child { margin-bottom: 0; }
+.block-label {
+  font-size: 11px; font-weight: 600; color: var(--text-3);
+  font-family: 'IBM Plex Mono', monospace;
+  letter-spacing: 0.06em; text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.block-text { font-size: 14px; color: var(--text-2); line-height: 1.65; }
+.gap-box {
+  padding: 14px 16px; border-radius: 7px;
+  background: var(--bg); border: 1px solid var(--border);
+  font-size: 14px; color: var(--text-2); line-height: 1.6;
+}
+.initiative-box {
+  padding: 16px 18px; border-radius: 7px;
+  border-left: 3px solid var(--blue);
+  background: var(--blue-bg);
+  border-top: 1px solid var(--blue-mid);
+  border-right: 1px solid var(--blue-mid);
+  border-bottom: 1px solid var(--blue-mid);
+}
+.initiative-box.critical { border-left-color: var(--red); background: var(--red-bg); border-color: var(--red-border); }
+.initiative-box.building { border-left-color: var(--amber); background: var(--amber-bg); border-color: var(--amber-border); }
+.initiative-box.developing { border-left-color: var(--teal); background: var(--teal-bg); border-color: var(--teal-border); }
+.initiative-box.advanced { border-left-color: var(--green); background: var(--green-bg); border-color: #bbf7d0; }
+.initiative-label {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase; margin-bottom: 8px;
+  font-family: 'IBM Plex Mono', monospace; color: var(--text-3);
+}
+.initiative-text { font-size: 14px; color: var(--text-2); line-height: 1.65; }
+.owner-row {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 12px; padding-top: 12px;
+  border-top: 1px solid rgba(0,0,0,0.06);
+}
+.owner-label {
+  font-size: 11px; color: var(--text-3); font-weight: 600;
+  font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.04em;
+}
+.owner-value { font-size: 13px; color: var(--text-2); font-weight: 500; }
+
+.covers-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.covers-list li {
+  font-size: 14px; color: var(--text-2);
+  padding-left: 18px; position: relative; line-height: 1.5;
+}
+.covers-list li::before {
+  content: '—'; position: absolute; left: 0; color: var(--text-4);
+}
+
+/* No-import notice */
+.no-import-notice {
+  margin-top: 16px; padding: 14px 16px;
+  border-radius: 7px; font-size: 13px; color: var(--text-2);
+  line-height: 1.5;
+}
+.l1 .no-import-notice { background: var(--l1-bg); border: 1px solid var(--l1-mid); }
+.l2 .no-import-notice { background: var(--l2-bg); border: 1px solid var(--l2-mid); }
+.l3 .no-import-notice { background: var(--l3-bg); border: 1px solid var(--l3-mid); }
+.l4 .no-import-notice { background: var(--l4-bg); border: 1px solid var(--l4-mid); }
+.l1 .no-import-notice strong { color: var(--l1); }
+.l2 .no-import-notice strong { color: var(--l2); }
+.l3 .no-import-notice strong { color: var(--l3); }
+.l4 .no-import-notice strong { color: var(--l4); }
+
+/* Layer explore next prompt */
+.explore-next {
+  margin-top: 20px; padding: 12px 16px;
+  border: 1px dashed var(--border-2); border-radius: 8px;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 13px; color: var(--text-3);
+}
+.explore-next button {
+  font-size: 12px; font-weight: 600; font-family: 'Figtree', sans-serif;
+  padding: 5px 14px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--border-2); background: var(--surface);
+  color: var(--text-2); transition: all 0.15s;
+}
+.explore-next button:hover { border-color: var(--blue); color: var(--blue); }
+
+/* ─── PRD SECTION ─── */
+.section-prd { display: none; }
+.section-prd.visible { display: block; }
+
+.prd-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 28px;
+}
+.prd-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+.prd-card > p {
+  font-size: 14px; color: var(--text-3); margin-bottom: 20px; line-height: 1.6;
+}
+.prd-summary {
+  padding: 16px; background: var(--bg); border-radius: 7px;
+  border: 1px solid var(--border); margin-bottom: 20px;
+  font-size: 13px; color: var(--text-2); line-height: 1.65;
+}
+.prd-summary strong { color: var(--text); }
+.btn-prd {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 14px; font-weight: 600; font-family: 'Figtree', sans-serif;
+  padding: 10px 22px; border-radius: 7px; cursor: pointer;
+  background: var(--text); color: white; border: none;
+  transition: opacity 0.15s;
+}
+.btn-prd:hover { opacity: 0.85; }
+
+/* ─── WHY SECTION ─── */
+.stat-row {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 12px; margin-bottom: 28px;
+}
+@media (max-width: 560px) { .stat-row { grid-template-columns: 1fr 1fr; } }
+
+.stat-chip {
+  padding: 20px 18px; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+  text-align: center;
+}
+.stat-chip-num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 28px; font-weight: 500; line-height: 1; margin-bottom: 8px;
+}
+.stat-chip-num.red { color: var(--red); }
+.stat-chip-num.amber { color: var(--amber); }
+.stat-chip-num.blue { color: var(--blue); }
+.stat-chip-label { font-size: 12px; color: var(--text-3); line-height: 1.4; }
+
+.why-blocks { display: flex; flex-direction: column; gap: 0; }
+.why-block {
+  padding: 24px 0; border-bottom: 1px solid var(--border);
+  display: grid; grid-template-columns: 220px 1fr; gap: 32px; align-items: start;
+}
+.why-block:last-child { border-bottom: none; }
+@media (max-width: 640px) { .why-block { grid-template-columns: 1fr; gap: 8px; } }
+.why-block-label {
+  font-size: 14px; font-weight: 600; color: var(--text);
+}
+.why-block-text { font-size: 14px; color: var(--text-2); line-height: 1.7; }
+.why-block-text p + p { margin-top: 10px; }
+.why-block-text strong { color: var(--text); }
+.why-block-text em { color: var(--text-3); }
+
+/* ─── FAILURE MODES SECTION ─── */
+.failure-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 640px) { .failure-grid { grid-template-columns: 1fr; } }
+
+.failure-card {
+  padding: 22px 22px 20px;
+  border-radius: 12px; border: 1px solid var(--border);
+  background: var(--surface);
+  position: relative; overflow: hidden;
+}
+.failure-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+}
+.failure-card.f-poison::before { background: var(--red); }
+.failure-card.f-distract::before { background: var(--amber); }
+.failure-card.f-clash::before { background: #c2410c; }
+.failure-card.f-confuse::before { background: var(--l2); }
+
+.failure-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; margin-bottom: 14px;
+}
+.failure-card.f-poison .failure-icon { background: var(--red-bg); border: 1px solid var(--red-border); }
+.failure-card.f-distract .failure-icon { background: var(--amber-bg); border: 1px solid var(--amber-border); }
+.failure-card.f-clash .failure-icon { background: #fff7ed; border: 1px solid #fed7aa; }
+.failure-card.f-confuse .failure-icon { background: var(--l2-bg); border: 1px solid var(--l2-mid); }
+
+.failure-title {
+  font-size: 15px; font-weight: 700; color: var(--text); margin-bottom: 10px;
+}
+.failure-desc { font-size: 13px; color: var(--text-2); line-height: 1.6; margin-bottom: 14px; }
+
+.failure-tag-row { display: flex; flex-direction: column; gap: 8px; }
+.failure-pill {
+  font-size: 12px; padding: 8px 12px; border-radius: 6px;
+  line-height: 1.4;
+}
+.failure-pill-label {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; font-weight: 500; letter-spacing: 0.07em;
+  text-transform: uppercase; display: block; margin-bottom: 2px;
+  opacity: 0.7;
+}
+.signal-pill { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
+.fix-pill { background: var(--green-bg); color: var(--green); border: 1px solid #bbf7d0; }
+
+/* ─── WHAT TO DO NEXT ─── */
+.next-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+@media (max-width: 640px) { .next-grid { grid-template-columns: 1fr; } }
+
+.next-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 12px; padding: 24px 24px 22px;
+  display: flex; flex-direction: column;
+}
+.next-num {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; color: var(--text-4);
+  margin-bottom: 12px; letter-spacing: 0.06em;
+}
+.next-title {
+  font-size: 16px; font-weight: 700; color: var(--text);
+  margin-bottom: 10px; letter-spacing: -0.01em;
+}
+.next-desc {
+  font-size: 13px; color: var(--text-3); line-height: 1.65;
+  flex: 1; margin-bottom: 18px;
+}
+.next-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; font-weight: 600; color: var(--blue);
+  text-decoration: none; border: 1px solid var(--blue-mid);
+  padding: 7px 14px; border-radius: 7px; background: var(--blue-bg);
+  width: fit-content; transition: all 0.15s;
+}
+.next-link:hover { background: var(--blue); color: white; border-color: var(--blue); }
+.next-action-note {
+  font-size: 13px; color: var(--text-3);
+  padding: 8px 14px; border-radius: 7px;
+  background: var(--bg); border: 1px solid var(--border);
+  width: fit-content;
+}
+
+/* ─── FOOTER ─── */
+footer {
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 28px 0; margin-top: 0;
+}
+.footer-inner {
+  max-width: 1100px; margin: 0 auto; padding: 0 28px;
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap; gap: 16px;
+}
+.footer-brand { font-size: 14px; font-weight: 700; color: var(--text); }
+.footer-brand span { color: var(--blue); }
+.footer-links { display: flex; gap: 24px; }
+.footer-links a {
+  font-size: 13px; color: var(--text-3); text-decoration: none; transition: color 0.15s;
+}
+.footer-links a:hover { color: var(--text); }
+.footer-copy { font-size: 12px; color: var(--text-4); }
+
+/* ─── SCROLL OFFSET for sticky header ─── */
+.page-section[id], section[id] { scroll-margin-top: 66px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     STICKY SERIES BAR
+══════════════════════════════════════════════════ -->
+<header class="site-header">
+  <div class="series-bar-inner">
+    <div class="series-tag">
+      Part of <strong>Making AI Work</strong> by
+      <a href="https://www.linkedin.com/in/thomas-larson-211a1981/" target="_blank">Thomas Larson</a>
+      &nbsp;·&nbsp; Part 2 of 5
+    </div>
+    <div class="bar-actions">
+      <button class="bar-btn" onclick="document.getElementById('why').scrollIntoView({behavior:'smooth'})">Why This Matters</button>
+      <button class="bar-btn" onclick="document.getElementById('failures').scrollIntoView({behavior:'smooth'})">Failure Modes</button>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════
+     PAGE HERO
+══════════════════════════════════════════════════ -->
+<div class="page-hero">
+  <div class="page-hero-inner">
+    <div class="hero-eyebrow">Making AI Work · Part 2 of 5</div>
+    <h1 class="hero-title">The Context Stack</h1>
+    <p class="hero-subtitle">Your AI's Operating System — the four-layer architecture that separates AI that compounds value from AI that silently fails.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     IMPORT STRIP
+══════════════════════════════════════════════════ -->
+<div class="import-strip">
+  <div class="import-strip-inner">
+    <p><strong>Import your Context Readiness Scorecard</strong> to unlock personalized insights and generate your executive readout.</p>
+    <div class="import-actions">
+      <a href="https://ceruleanoak.github.io/context-readiness-scorecard/" target="_blank">↗ Take the assessment first</a>
+      <input type="file" id="file-input" accept=".txt" onchange="handleImport(this)">
+      <div class="import-status" id="import-status">
+        <div class="import-status-pill" id="import-label">Results loaded</div>
+        <button class="btn-clear" onclick="clearImport()">Clear</button>
+      </div>
+      <button class="btn-import" id="import-btn" onclick="document.getElementById('file-input').click()">
+        ↑ Import Results (.txt)
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     MAIN CONTENT
+══════════════════════════════════════════════════ -->
+<div class="main">
+
+  <!-- ─── SECTION: FOUR LAYERS EXPLORER ─── -->
+  <section class="page-section" id="tool">
+
+    <div class="section-header-row">
+      <div class="section-label">Interactive Explorer</div>
+      <h2 class="section-heading">The Four Layers</h2>
+      <p class="section-subhead">Select any layer to explore what it covers — and what it means for your AI program. Import your scorecard to see where you stand.</p>
+    </div>
+
+    <div class="exploration-intro">
+      <p>Each layer builds on the last. Foundation enables Intelligence. Intelligence shapes Capability. Capability requires Oversight. A gap in any layer limits every layer above it.</p>
+      <div class="layer-progress">Exploring: <strong id="progress-name">Foundation</strong> &nbsp;— L<strong id="progress-num">1</strong> of 4</div>
+    </div>
+
+    <div class="tool-layout">
+
+      <!-- LEFT: LAYER NAV -->
+      <div class="layer-nav">
+        <div class="layer-nav-header">The Four Layers</div>
+
+        <button class="layer-btn l1 active" id="nav-1" onclick="selectLayer(1)">
+          <div class="layer-btn-row">
+            <div class="layer-badge">L1</div>
+            <div class="layer-text">
+              <div class="layer-name">Foundation</div>
+              <div class="layer-tagline">Data access &amp; quality</div>
+            </div>
+            <span class="layer-score-chip" id="score-1">—</span>
+          </div>
+          <div class="layer-bar-wrap" id="bar-wrap-1">
+            <div class="layer-bar-track"><div class="layer-bar-fill" id="bar-1"></div></div>
+          </div>
+          <div class="status-badge" id="badge-1"></div>
+        </button>
+
+        <button class="layer-btn l2" id="nav-2" onclick="selectLayer(2)">
+          <div class="layer-btn-row">
+            <div class="layer-badge">L2</div>
+            <div class="layer-text">
+              <div class="layer-name">Intelligence</div>
+              <div class="layer-tagline">Organizational knowledge &amp; memory</div>
+            </div>
+            <span class="layer-score-chip" id="score-2">—</span>
+          </div>
+          <div class="layer-bar-wrap" id="bar-wrap-2">
+            <div class="layer-bar-track"><div class="layer-bar-fill" id="bar-2"></div></div>
+          </div>
+          <div class="status-badge" id="badge-2"></div>
+        </button>
+
+        <button class="layer-btn l3" id="nav-3" onclick="selectLayer(3)">
+          <div class="layer-btn-row">
+            <div class="layer-badge">L3</div>
+            <div class="layer-text">
+              <div class="layer-name">Capability</div>
+              <div class="layer-tagline">Actions, integrations &amp; state</div>
+            </div>
+            <span class="layer-score-chip" id="score-3">—</span>
+          </div>
+          <div class="layer-bar-wrap" id="bar-wrap-3">
+            <div class="layer-bar-track"><div class="layer-bar-fill" id="bar-3"></div></div>
+          </div>
+          <div class="status-badge" id="badge-3"></div>
+        </button>
+
+        <button class="layer-btn l4" id="nav-4" onclick="selectLayer(4)">
+          <div class="layer-btn-row">
+            <div class="layer-badge">L4</div>
+            <div class="layer-text">
+              <div class="layer-name">Oversight</div>
+              <div class="layer-tagline">Guardrails, quality &amp; governance</div>
+            </div>
+            <span class="layer-score-chip" id="score-4">—</span>
+          </div>
+          <div class="layer-bar-wrap" id="bar-wrap-4">
+            <div class="layer-bar-track"><div class="layer-bar-fill" id="bar-4"></div></div>
+          </div>
+          <div class="status-badge" id="badge-4"></div>
+        </button>
+
+        <!-- Stack mini-viz -->
+        <div class="nav-stack-viz">
+          <div class="nav-stack-label">Stack Visualization</div>
+          <div class="stack-bars">
+            <div class="stack-bar-row">
+              <div class="stack-bar-name" id="viz-4">L4 · Oversight</div>
+              <div class="stack-bar-chip l4" id="chip-4"></div>
+            </div>
+            <div class="stack-bar-row">
+              <div class="stack-bar-name" id="viz-3">L3 · Capability</div>
+              <div class="stack-bar-chip l3" id="chip-3"></div>
+            </div>
+            <div class="stack-bar-row">
+              <div class="stack-bar-name" id="viz-2">L2 · Intelligence</div>
+              <div class="stack-bar-chip l2" id="chip-2"></div>
+            </div>
+            <div class="stack-bar-row">
+              <div class="stack-bar-name" id="viz-1">L1 · Foundation</div>
+              <div class="stack-bar-chip l1 active" id="chip-1"></div>
+            </div>
+          </div>
+        </div>
+      </div><!-- end layer-nav -->
+
+      <!-- RIGHT: DETAIL PANELS -->
+      <div>
+
+        <!-- LAYER 1: FOUNDATION -->
+        <div class="layer-detail l1 visible" id="detail-1">
+          <div class="detail-card l1">
+            <div class="detail-header" data-num="01">
+              <div class="detail-layer-tag">
+                <div class="detail-layer-pip"></div>
+                <div class="detail-layer-num">LAYER 01 · FOUNDATION</div>
+              </div>
+              <div class="detail-title">Data Access &amp; Quality</div>
+              <div class="detail-question">"Can the AI actually see the information it needs — live, clean, and complete?"</div>
+            </div>
+            <div class="detail-body">
+              <div class="score-banner" id="banner-1" style="display:none">
+                <div class="score-big" id="banner-score-1"></div>
+                <div class="score-text">
+                  <div class="score-status-label" id="banner-status-1"></div>
+                  <div class="score-interp" id="banner-interp-1"></div>
+                </div>
+              </div>
+              <div class="content-block" id="covers-1">
+                <div class="block-label">What this layer covers</div>
+                <ul class="covers-list">
+                  <li>Data source connectivity and API accessibility across systems</li>
+                  <li>Real-time vs. batch data availability — and who controls the difference</li>
+                  <li>Data quality, validation, and freshness monitoring</li>
+                  <li>Cross-system context sharing — the AI synthesizing across sources, not just reading one</li>
+                  <li>Semantic groundwork: data must be structured and labeled before it can be routed to the right action</li>
+                </ul>
+              </div>
+              <div class="content-block" id="gap-block-1" style="display:none">
+                <div class="block-label">Primary Gap</div>
+                <div class="gap-box" id="gap-text-1"></div>
+              </div>
+              <div class="content-block" id="impact-block-1" style="display:none">
+                <div class="block-label">What This Means for Your AI</div>
+                <div class="block-text" id="impact-text-1"></div>
+              </div>
+              <div class="content-block" id="init-block-1" style="display:none">
+                <div class="initiative-box" id="init-box-1">
+                  <div class="initiative-label">Priority Initiative</div>
+                  <div class="initiative-text" id="init-text-1"></div>
+                  <div class="owner-row">
+                    <span class="owner-label">Owner:</span>
+                    <span class="owner-value">Data Engineering / Platform Team</span>
+                  </div>
+                </div>
+              </div>
+              <div class="no-import-notice" id="nudge-1">
+                <strong>Import your scorecard results</strong> to see a personalized assessment of this layer, your primary gap, and a prioritized initiative recommendation.
+              </div>
+              <div class="explore-next">
+                <span>Continue exploring the stack</span>
+                <button onclick="selectLayer(2)">Intelligence: L2 →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LAYER 2: INTELLIGENCE -->
+        <div class="layer-detail l2" id="detail-2">
+          <div class="detail-card l2">
+            <div class="detail-header" data-num="02">
+              <div class="detail-layer-tag">
+                <div class="detail-layer-pip"></div>
+                <div class="detail-layer-num">LAYER 02 · INTELLIGENCE</div>
+              </div>
+              <div class="detail-title">Organizational Knowledge &amp; Memory</div>
+              <div class="detail-question">"Does the AI understand how your business actually works — its policies, workflows, decisions, and institutional memory?"</div>
+            </div>
+            <div class="detail-body">
+              <div class="score-banner" id="banner-2" style="display:none">
+                <div class="score-big" id="banner-score-2"></div>
+                <div class="score-text">
+                  <div class="score-status-label" id="banner-status-2"></div>
+                  <div class="score-interp" id="banner-interp-2"></div>
+                </div>
+              </div>
+              <div class="content-block" id="covers-2">
+                <div class="block-label">What this layer covers</div>
+                <ul class="covers-list">
+                  <li>Organizational knowledge activation: policies, SOPs, institutional decisions and the rationale behind them</li>
+                  <li>Documented workflows and business process logic — the difference between what's written and what's actually done</li>
+                  <li>Episodic memory: what the AI has done before, what users have told it, what commitments exist across sessions</li>
+                  <li>Semantic routing design — the Topic/Action architecture that maps user intent to authorized, scoped capabilities</li>
+                  <li>Use case scope: what this AI is explicitly for, and what it is explicitly not for</li>
+                </ul>
+              </div>
+              <div class="content-block" id="gap-block-2" style="display:none">
+                <div class="block-label">Primary Gap</div>
+                <div class="gap-box" id="gap-text-2"></div>
+              </div>
+              <div class="content-block" id="impact-block-2" style="display:none">
+                <div class="block-label">What This Means for Your AI</div>
+                <div class="block-text" id="impact-text-2"></div>
+              </div>
+              <div class="content-block" id="init-block-2" style="display:none">
+                <div class="initiative-box" id="init-box-2">
+                  <div class="initiative-label">Priority Initiative</div>
+                  <div class="initiative-text" id="init-text-2"></div>
+                  <div class="owner-row">
+                    <span class="owner-label">Owner:</span>
+                    <span class="owner-value">AI Product Owner / Knowledge Management</span>
+                  </div>
+                </div>
+              </div>
+              <div class="no-import-notice" id="nudge-2">
+                <strong>Import your scorecard results</strong> to see a personalized assessment of this layer, your primary gap, and a prioritized initiative recommendation.
+              </div>
+              <div class="explore-next">
+                <span>Continue exploring the stack</span>
+                <button onclick="selectLayer(3)">Capability: L3 →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LAYER 3: CAPABILITY -->
+        <div class="layer-detail l3" id="detail-3">
+          <div class="detail-card l3">
+            <div class="detail-header" data-num="03">
+              <div class="detail-layer-tag">
+                <div class="detail-layer-pip"></div>
+                <div class="detail-layer-num">LAYER 03 · CAPABILITY</div>
+              </div>
+              <div class="detail-title">Actions, Integrations &amp; State</div>
+              <div class="detail-question">"Can the AI take actions — not just generate answers — and does the infrastructure support doing so at the scale you need?"</div>
+            </div>
+            <div class="detail-body">
+              <div class="score-banner" id="banner-3" style="display:none">
+                <div class="score-big" id="banner-score-3"></div>
+                <div class="score-text">
+                  <div class="score-status-label" id="banner-status-3"></div>
+                  <div class="score-interp" id="banner-interp-3"></div>
+                </div>
+              </div>
+              <div class="content-block" id="covers-3">
+                <div class="block-label">What this layer covers</div>
+                <ul class="covers-list">
+                  <li>Tool definitions and API integrations — what the AI can actually do, not just describe</li>
+                  <li>State management across sessions, agents, and handoffs — workflows that persist and complete</li>
+                  <li>Scalability architecture: designed for production volume, not pilot volume</li>
+                  <li>Observability infrastructure: tracing, logging, and performance visibility across the full execution chain</li>
+                  <li>Authorization controls: which actions are autonomous, which require confirmation, which must always escalate</li>
+                </ul>
+              </div>
+              <div class="content-block" id="gap-block-3" style="display:none">
+                <div class="block-label">Primary Gap</div>
+                <div class="gap-box" id="gap-text-3"></div>
+              </div>
+              <div class="content-block" id="impact-block-3" style="display:none">
+                <div class="block-label">What This Means for Your AI</div>
+                <div class="block-text" id="impact-text-3"></div>
+              </div>
+              <div class="content-block" id="init-block-3" style="display:none">
+                <div class="initiative-box" id="init-box-3">
+                  <div class="initiative-label">Priority Initiative</div>
+                  <div class="initiative-text" id="init-text-3"></div>
+                  <div class="owner-row">
+                    <span class="owner-label">Owner:</span>
+                    <span class="owner-value">Engineering / Solutions Architect</span>
+                  </div>
+                </div>
+              </div>
+              <div class="no-import-notice" id="nudge-3">
+                <strong>Import your scorecard results</strong> to see a personalized assessment of this layer, your primary gap, and a prioritized initiative recommendation.
+              </div>
+              <div class="explore-next">
+                <span>Continue exploring the stack</span>
+                <button onclick="selectLayer(4)">Oversight: L4 →</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- LAYER 4: OVERSIGHT -->
+        <div class="layer-detail l4" id="detail-4">
+          <div class="detail-card l4">
+            <div class="detail-header" data-num="04">
+              <div class="detail-layer-tag">
+                <div class="detail-layer-pip"></div>
+                <div class="detail-layer-num">LAYER 04 · OVERSIGHT</div>
+              </div>
+              <div class="detail-title">Guardrails, Quality &amp; Governance</div>
+              <div class="detail-question">"Can you ensure the AI's outputs are accurate, compliant, and improving — and can you prove it?"</div>
+            </div>
+            <div class="detail-body">
+              <div class="score-banner" id="banner-4" style="display:none">
+                <div class="score-big" id="banner-score-4"></div>
+                <div class="score-text">
+                  <div class="score-status-label" id="banner-status-4"></div>
+                  <div class="score-interp" id="banner-interp-4"></div>
+                </div>
+              </div>
+              <div class="content-block" id="covers-4">
+                <div class="block-label">What this layer covers</div>
+                <ul class="covers-list">
+                  <li>Output guardrails: what the AI cannot say, enforced architecturally — not requested in the prompt</li>
+                  <li>Quality standards definition: measurable criteria for what "good" means for this specific use case</li>
+                  <li>Continuous evaluation: measuring groundedness, accuracy, and policy compliance on live traffic</li>
+                  <li>Drift detection and remediation: catching degradation before users report it</li>
+                  <li>Audit and compliance infrastructure: the documented trail that satisfies regulators, risk functions, and boards</li>
+                  <li>Human oversight protocols: defined escalation paths and override mechanisms</li>
+                </ul>
+              </div>
+              <div class="content-block" id="gap-block-4" style="display:none">
+                <div class="block-label">Primary Gap</div>
+                <div class="gap-box" id="gap-text-4"></div>
+              </div>
+              <div class="content-block" id="impact-block-4" style="display:none">
+                <div class="block-label">What This Means for Your AI</div>
+                <div class="block-text" id="impact-text-4"></div>
+              </div>
+              <div class="content-block" id="init-block-4" style="display:none">
+                <div class="initiative-box" id="init-box-4">
+                  <div class="initiative-label">Priority Initiative</div>
+                  <div class="initiative-text" id="init-text-4"></div>
+                  <div class="owner-row">
+                    <span class="owner-label">Owner:</span>
+                    <span class="owner-value">Risk / Compliance / AI Product Owner</span>
+                  </div>
+                </div>
+              </div>
+              <div class="no-import-notice" id="nudge-4">
+                <strong>Import your scorecard results</strong> to see a personalized assessment of this layer, your primary gap, and a prioritized initiative recommendation.
+              </div>
+              <div class="explore-next">
+                <span>You've explored all four layers</span>
+                <button onclick="document.getElementById('why').scrollIntoView({behavior:'smooth'})">Why This Matters ↓</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- end right column -->
+    </div><!-- end tool-layout -->
+
+  </section><!-- end tool section -->
+
+  <!-- ─── SECTION: PRD (visible after import) ─── -->
+  <section class="page-section section-prd" id="prd-section" style="padding-top:0; border-top:none;">
+    <div class="prd-card">
+      <h3>Executive Readout &amp; AI Product Owner Briefing</h3>
+      <p>A structured readout of your context stack posture — prioritized initiatives, resource requirements, and a handoff document for the owner responsible for your AI transformation.</p>
+      <div class="prd-summary" id="prd-preview"></div>
+      <button class="btn-prd" onclick="downloadPRD()">↓ Download Executive Readout (.txt)</button>
+    </div>
+  </section>
+
+  <!-- ─── SECTION: WHY THIS MATTERS ─── -->
+  <section class="page-section" id="why">
+    <div class="section-header-row">
+      <div class="section-label">Context</div>
+      <h2 class="section-heading">Why Does My Business Need This?</h2>
+      <p class="section-subhead">The architecture problem behind the AI ROI problem.</p>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-chip">
+        <div class="stat-chip-num red">95%</div>
+        <div class="stat-chip-label">of AI pilots deliver zero measurable P&amp;L impact</div>
+      </div>
+      <div class="stat-chip">
+        <div class="stat-chip-num amber">5%</div>
+        <div class="stat-chip-label">of production AI agents have mature quality monitoring</div>
+      </div>
+      <div class="stat-chip">
+        <div class="stat-chip-num red">91%</div>
+        <div class="stat-chip-label">of ML models degrade over time — mostly undetected</div>
+      </div>
+    </div>
+
+    <div class="why-blocks">
+      <div class="why-block">
+        <div class="why-block-label">The silent degradation problem</div>
+        <div class="why-block-text">
+          <p>Traditional monitoring tells you if the system is <em>running</em>. It tells you nothing about whether the answers are any good. LLMs are non-deterministic — the same question generates different answers each session. They degrade silently as their knowledge goes stale. Models left unchanged for six months see error rates jump 35% on new data. Your dashboards stay green while quality compounds downward.</p>
+        </div>
+      </div>
+      <div class="why-block">
+        <div class="why-block-label">The "AI slop" problem inside your organization</div>
+        <div class="why-block-text">
+          <p>Low-quality, AI-generated content isn't just a public internet problem. It accumulates inside operations when AI is deployed without quality infrastructure. A customer service response citing a policy updated six months ago. A compliance summary that omits a material risk factor — in perfect prose. AI that sounds right while being wrong, at scale, with no mechanism to detect it.</p>
+        </div>
+      </div>
+      <div class="why-block">
+        <div class="why-block-label">The structural diagnosis</div>
+        <div class="why-block-text">
+          <p>Hallucination rates run 5–20% in complex extraction cases. A 2024 Arxiv study confirmed that hallucination cannot be eliminated due to computational constraints — it can only be <em>intercepted</em>. This cannot be prompted away. It requires architectural interception: validation before data enters the context layer, guardrails enforced at the output layer, and monitoring that covers quality — not just uptime.</p>
+        </div>
+      </div>
+      <div class="why-block">
+        <div class="why-block-label">Two deployments. Same model. Different outcomes.</div>
+        <div class="why-block-text">
+          <p><strong>Without a context stack:</strong> No defined scope — the AI attempts to answer anything. No data validation — stale documents carry the same weight as current ones. No output enforcement — format and accuracy vary by session. No audit trail — when something fails, root cause is untraceable.</p>
+          <p><strong>With a context stack:</strong> Defined scope with authorized actions per intent. Curated, versioned data with quality validation. Schema-enforced outputs with architectural guardrails. Continuous evaluation and full traceability. Organizations deploying this architecture report compliant AI output rates rising from below 67% to above 90%.</p>
+        </div>
+      </div>
+      <div class="why-block">
+        <div class="why-block-label">The compliance deadline</div>
+        <div class="why-block-text">
+          <p>Starting August 2, 2026, EU AI Act requirements mandate continuous monitoring programs, real-world performance tracking, and incident reporting for high-risk AI deployments — including financial services and healthcare applications. For organizations that cannot demonstrate they are monitoring output quality — not just system availability — regulatory exposure has already arrived.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SECTION: FAILURE MODES ─── -->
+  <section class="page-section" id="failures">
+    <div class="section-header-row">
+      <div class="section-label">Diagnostic Framework</div>
+      <h2 class="section-heading">The Four Failure Modes</h2>
+      <p class="section-subhead">Even well-architected context stacks encounter predictable failure patterns. Each mode has a distinct signature — and a distinct fix.</p>
+    </div>
+
+    <div class="failure-grid">
+
+      <div class="failure-card f-poison">
+        <div class="failure-icon">☠</div>
+        <div class="failure-title">Context Poisoning</div>
+        <p class="failure-desc">Contaminated or incorrect information enters the context layer. The AI treats it as authoritative and responds with confident, wrong answers — without any error signal.</p>
+        <div class="failure-tag-row">
+          <div class="failure-pill signal-pill">
+            <span class="failure-pill-label">⚠ Diagnostic Signal</span>
+            Outputs are internally consistent but operationally wrong. No one notices because the answers sound authoritative.
+          </div>
+          <div class="failure-pill fix-pill">
+            <span class="failure-pill-label">✓ Architectural Fix</span>
+            Data quality validation before information enters the context layer. Version control with staleness alerts. Source traceability on every output.
+          </div>
+        </div>
+      </div>
+
+      <div class="failure-card f-distract">
+        <div class="failure-icon">🌊</div>
+        <div class="failure-title">Context Distraction</div>
+        <p class="failure-desc">Too many irrelevant tools and data sources compete for model attention. Stanford research shows this causes catastrophic accuracy degradation — sudden collapse, not gradual decline.</p>
+        <div class="failure-tag-row">
+          <div class="failure-pill signal-pill">
+            <span class="failure-pill-label">⚠ Diagnostic Signal</span>
+            Performance degrades as system complexity increases. Pilots that worked with 5 tools underperform at 20. Users notice before engineers do.
+          </div>
+          <div class="failure-pill fix-pill">
+            <span class="failure-pill-label">✓ Architectural Fix</span>
+            Intent-scoped action libraries. Each topic handles only the tools it needs. Dynamic retrieval serves relevant context, not the full corpus.
+          </div>
+        </div>
+      </div>
+
+      <div class="failure-card f-clash">
+        <div class="failure-icon">⚡</div>
+        <div class="failure-title">Context Clash</div>
+        <p class="failure-desc">Conflicting instructions from multiple sources create incoherent behavior. The model arbitrates between IT governance, legal requirements, security policy, and business user needs — with no defined priority.</p>
+        <div class="failure-tag-row">
+          <div class="failure-pill signal-pill">
+            <span class="failure-pill-label">⚠ Diagnostic Signal</span>
+            Inconsistent behavior on similar inputs. Behavior differs by user, time, or session in ways no single person can fully explain.
+          </div>
+          <div class="failure-pill fix-pill">
+            <span class="failure-pill-label">✓ Architectural Fix</span>
+            Explicit priority hierarchies encoded in the architecture. When layers conflict, the resolution must be designed — not left to the model.
+          </div>
+        </div>
+      </div>
+
+      <div class="failure-card f-confuse">
+        <div class="failure-icon">🌀</div>
+        <div class="failure-title">Context Confusion</div>
+        <p class="failure-desc">Overwhelming complexity prevents the model from identifying what's relevant. The architecture is correct, the data is clean — but volume exceeds reliable signal extraction. Emerges at scale, after pilots succeed.</p>
+        <div class="failure-tag-row">
+          <div class="failure-pill signal-pill">
+            <span class="failure-pill-label">⚠ Diagnostic Signal</span>
+            Excellent in pilots, deteriorates in production. Works for narrow use cases, fails to generalize. More comprehensive context produces worse outputs.
+          </div>
+          <div class="failure-pill fix-pill">
+            <span class="failure-pill-label">✓ Architectural Fix</span>
+            Context compression and semantic ranking. Systems that serve only what's relevant to the current task — not the full knowledge corpus.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ─── SECTION: WHAT TO DO NEXT ─── -->
+  <section class="page-section" id="next">
+    <div class="section-header-row">
+      <div class="section-label">Next Steps</div>
+      <h2 class="section-heading">What to Do Next</h2>
+      <p class="section-subhead">Four concrete actions — starting today.</p>
+    </div>
+
+    <div class="next-grid">
+
+      <div class="next-card">
+        <div class="next-num">01</div>
+        <div class="next-title">Take the Assessment</div>
+        <p class="next-desc">If you haven't completed the Context Readiness Scorecard, start there. It gives you scores across the four dimensions that map directly to these layers — and feeds personalized insights back into this tool.</p>
+        <a href="https://ceruleanoak.github.io/context-readiness-scorecard/" target="_blank" class="next-link">Open the Scorecard →</a>
+      </div>
+
+      <div class="next-card">
+        <div class="next-num">02</div>
+        <div class="next-title">Read the Full Article</div>
+        <p class="next-desc">Part 2 of Making AI Work is published on LinkedIn and goes deeper on silent degradation, the semantic layer, and the contrast between LLM wrapper deployments and a structured context stack.</p>
+        <a href="https://www.linkedin.com/in/thomas-larson-211a1981/" target="_blank" class="next-link">Read on LinkedIn →</a>
+      </div>
+
+      <div class="next-card">
+        <div class="next-num">03</div>
+        <div class="next-title">Assign Layer Ownership</div>
+        <p class="next-desc">The most common reason AI initiatives stall is accountability, not budget. Name a person responsible for each layer. Foundation needs a Data Engineering lead. Intelligence needs an AI Product Owner. The role creates the roadmap.</p>
+        <div class="next-action-note">Name the AI Product Owner this week</div>
+      </div>
+
+      <div class="next-card">
+        <div class="next-num">04</div>
+        <div class="next-title">Follow Part 3: The UX Layer</div>
+        <p class="next-desc">Part 3 covers the UX of context-aware AI — why technically sound systems still get abandoned in favor of basic search, and the design principles that reverse that pattern.</p>
+        <a href="https://thomaslarson.carrd.co" target="_blank" class="next-link">Follow the Series →</a>
+      </div>
+
+    </div>
+  </section>
+
+</div><!-- end main -->
+
+<!-- ═══════════════════════════════════════════════
+     FOOTER
+══════════════════════════════════════════════════ -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">Making <span>AI</span> Work</div>
+    <div class="footer-links">
+      <a href="https://thomaslarson.carrd.co" target="_blank">Series Home</a>
+      <a href="https://ceruleanoak.github.io/context-readiness-scorecard/" target="_blank">Part 1: Scorecard</a>
+      <a href="https://www.linkedin.com/in/thomas-larson-211a1981/" target="_blank">LinkedIn</a>
+    </div>
+    <div class="footer-copy">© 2026 Thomas Larson · Enterprise AI Strategist</div>
+  </div>
+</footer>
+
+<script>
+// ─── STATE ───
+let imported = null;
+let activeLayer = 1;
+
+// ─── LAYER CONTENT ───
+const layerContent = {
+  1: {
+    gaps: {
+      critical:    'Data connectivity is fragmented or absent. The AI has no governed access to organizational data sources.',
+      building:    'Data quality and cross-system synthesis. Some data is connected but coverage is inconsistent and sources don\'t speak to each other.',
+      developing:  'Unified data model and semantic accessibility. Sources are connected but the AI cannot reason across them as a coherent whole.',
+      advanced:    'Semantic queryability and knowledge graph architecture. Access exists — the next frontier is full semantic traversal.'
+    },
+    interpretations: {
+      critical:    'Every answer is potentially drawn from public training data, not your business reality. You cannot trace outputs to sources because no governed source connection exists. This is not an enterprise AI system — it is a public model with a company logo on it.',
+      building:    'The AI gives accurate answers about some things and confidently wrong answers about others. Users have learned which questions to trust. That workaround knowledge lives in people, not infrastructure. When those people leave, it leaves with them.',
+      developing:  'Personalization works for known entities in primary systems. Novel or cross-functional situations expose the seams. The AI knows what\'s in each system — it cannot synthesize across them.',
+      advanced:    'Data is governed, real-time, and bi-directional. The bottleneck has shifted from access to activation — making the full data corpus semantically traversable, not just technically accessible.'
+    },
+    initiatives: {
+      critical:    'Data inventory audit and API connectivity roadmap. Identify the 3 highest-leverage data sources for your primary use case. Stand up governed access with validation before any further AI investment. This precedes everything else.',
+      building:    'Standardize data freshness SLAs across connected sources. Implement validation before data enters the context layer. Map data lineage so every output can be traced to a source document or record.',
+      developing:  'Unified canonical data model initiative. Define authoritative records for key entities — customer, product, policy. All systems must resolve to the same record. This is the prerequisite for semantic routing in the Intelligence layer.',
+      advanced:    'Semantic search layer, vector store, and hybrid retrieval architecture. Move from "the AI can read your documents" to "the AI understands your knowledge graph and can traverse it by meaning."'
+    }
+  },
+  2: {
+    gaps: {
+      critical:    'Organizational knowledge is not AI-accessible. The AI knows your industry. It does not know your organization.',
+      building:    'Institutional depth and semantic scope definition. Standard knowledge is documented; exception logic, rationale, and edge cases are not.',
+      developing:  'Memory continuity and semantic formalization. The AI is contextually aware within sessions but has no continuity across them.',
+      advanced:    'Knowledge governance and freshness at scale. The system knows what the organization knew when it was built — which is already becoming stale.'
+    },
+    interpretations: {
+      critical:    'Your AI is operating on generic industry knowledge. It cannot distinguish your pricing policy from a competitor\'s, your escalation threshold from the industry standard, or your exception logic from the default. Every output is a generic answer dressed in company language.',
+      building:    'Core policies are accessible but the AI cannot navigate exceptions. It handles the 80% and fails the 20% — the high-stakes edge cases that most need institutional knowledge. Users have learned not to ask certain questions.',
+      developing:  'The AI is contextually aware within a session. A follow-up question builds on the prior answer. But tomorrow, it starts from zero. Continuity is a user burden, not an architectural feature.',
+      advanced:    'Organizational knowledge is activated and accessible. The frontier is keeping it current: versioning policies as they change, deprecating superseded decisions, and building the governance that prevents knowledge staleness at scale.'
+    },
+    initiatives: {
+      critical:    'Organizational knowledge inventory and activation sprint. Identify the top 20% of knowledge that drives 80% of AI interactions. Package it in structured, AI-accessible form with version control. Assign a Knowledge Owner role.',
+      building:    'Exception logic capture and semantic scope definition. Document the rationale behind policies, not just the policies themselves. Draft the first Topics and Actions library — mapping each intent category to its authorized capabilities and hard exclusions.',
+      developing:  'Episodic memory architecture. Implement session persistence so the AI retains what users have told it across conversations. Define the data model for organizational memory: what gets stored, how long, who can access it.',
+      advanced:    'Knowledge governance and continuous freshness program. Build the process for updating AI-accessible knowledge as policies change — not as a one-time project but as an operational discipline with a named owner.'
+    }
+  },
+  3: {
+    gaps: {
+      critical:    'The AI can only generate answers — it cannot take actions. It is a search interface, not a workflow participant.',
+      building:    'Tool coverage and authorization model. Some integrations exist but the AI lacks the infrastructure to take actions reliably at production scale.',
+      developing:  'State management and observability. The AI can act but cannot remember what it did, hand off to other agents, or recover from interruption.',
+      advanced:    'Autonomous scale and graduated trust. The capability exists; the question is how much the organization is willing to let the AI do without a human in the loop.'
+    },
+    interpretations: {
+      critical:    'AI investment is generating a very expensive summarization tool. Users are doing the work the AI should be doing — copying outputs, pasting into systems, taking the action manually. Adoption plateaus here because the tool doesn\'t reduce work; it just changes which part of it is human.',
+      building:    'Some workflows are automated but the boundary of what the AI can reliably do is unclear. Users are not sure when to trust it to act versus when to verify. That ambiguity erodes adoption faster than any technical failure.',
+      developing:  'The AI can complete tasks but cannot complete workflows. Handoffs break. Interrupted sessions restart from zero. Multi-agent coordination produces inconsistent results. The capability is real; the state management is not.',
+      advanced:    'The infrastructure can support autonomous action. The organizational question is where to draw the autonomy line — which decisions require human confirmation and which can proceed without it. That is a policy question, not a technology question.'
+    },
+    initiatives: {
+      critical:    'Tool definition and integration roadmap for the primary use case. Define the 3 highest-value actions the AI should be taking on behalf of users. Build the authorization model — autonomous, confirm-required, always-escalate — before connecting any tool to production.',
+      building:    'Authorization framework and graduated autonomy design. Document which actions are safe to automate, which require user confirmation, and which must always involve a human decision. Implement observability before expanding tool coverage.',
+      developing:  'State management and agent handoff architecture. Define how sessions persist, how state transfers between agents, and how interrupted workflows recover. The conversation memory that makes a workflow participant requires explicit architectural design.',
+      advanced:    'Autonomous scale program and trust expansion roadmap. Establish the metrics that would justify expanding AI autonomy — error rates, user confidence scores, audit findings. Build the governance process for moving actions from confirm-required to autonomous.'
+    }
+  },
+  4: {
+    gaps: {
+      critical:    'No quality infrastructure exists. The AI is operating without guardrails, without monitoring, and without any mechanism to detect or remediate failure.',
+      building:    'Quality standards and systematic evaluation. Ad hoc review exists but quality assessment is not systematic, not continuous, and not traceable.',
+      developing:  'Drift detection and compliance infrastructure. Quality processes exist but are not keeping pace with the rate of organizational and model change.',
+      advanced:    'Governance scaling and audit maturity. Quality is measured; the challenge is maintaining rigor as the number of use cases, agents, and users grows.'
+    },
+    interpretations: {
+      critical:    'This is the highest-risk posture in enterprise AI. Without guardrails, the AI will eventually produce a high-confidence, operationally harmful output. Without monitoring, you will not know until a user reports it or an auditor finds it. Expanding this deployment before addressing Oversight is compounding risk, not creating value.',
+      building:    'Quality is person-dependent, not system-dependent. A reviewer catches problems today. When that reviewer is on leave, problems go uncaught. This is not an oversight program — it is a single point of failure with a human face.',
+      developing:  'The quality infrastructure exists but it is a snapshot, not a continuous signal. Models drift. Policies change. New edge cases emerge. A quarterly review misses the failure modes that compound in between reviews.',
+      advanced:    'The governance posture is mature. The next challenge is scaling it: maintaining quality rigor as the number of use cases multiplies, ensuring the evaluation framework keeps pace with new model capabilities, and building the audit infrastructure that satisfies regulators — not just internal risk teams.'
+    },
+    initiatives: {
+      critical:    'Architectural guardrails and baseline quality protocol. Define what the AI must never say or do — and enforce it architecturally, not through prompting. Stand up automated sampling on production traffic. Document the incident response protocol before the first incident.',
+      building:    'Systematic evaluation framework. Define measurable quality criteria for the primary use case: groundedness score, policy compliance rate, format adherence. Move from ad hoc human review to structured sampling with defined thresholds.',
+      developing:  'Drift detection and continuous evaluation pipeline. Implement automated monitoring that catches quality degradation between review cycles. Define the staleness threshold — how long a model or knowledge base can go without recalibration before it enters a remediation workflow.',
+      advanced:    'Governance scaling and regulatory audit readiness. Build the documentation infrastructure that satisfies external audit: decision logs, evaluation records, incident history, and the evidence that your monitoring program meets EU AI Act continuous monitoring requirements.'
+    }
+  }
+};
+
+// ─── STATUS HELPERS ───
+function getStatus(score) {
+  const s = parseFloat(score);
+  if (s <= 2.0) return 'critical';
+  if (s <= 3.0) return 'building';
+  if (s <= 4.0) return 'developing';
+  return 'advanced';
+}
+function getStatusLabel(score) {
+  const map = { critical:'Critical', building:'Building', developing:'Developing', advanced:'Advanced' };
+  return map[getStatus(score)];
+}
+
+// ─── LAYER SELECTION ───
+function selectLayer(n) {
+  activeLayer = n;
+  const names = ['', 'Foundation', 'Intelligence', 'Capability', 'Oversight'];
+  document.getElementById('progress-name').textContent = names[n];
+  document.getElementById('progress-num').textContent = n;
+
+  // Update nav buttons
+  for (let i = 1; i <= 4; i++) {
+    document.getElementById('nav-'+i).classList.toggle('active', i === n);
+  }
+
+  // Update detail panels
+  for (let i = 1; i <= 4; i++) {
+    const d = document.getElementById('detail-'+i);
+    d.classList.toggle('visible', i === n);
+  }
+
+  // Update stack viz
+  for (let i = 1; i <= 4; i++) {
+    document.getElementById('chip-'+i).classList.toggle('active', i === n);
+    document.getElementById('viz-'+i).classList.toggle('active', i === n);
+  }
+}
+
+// ─── FILE IMPORT ───
+function handleImport(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result;
+    const parsed = parseScorecard(text);
+    if (!parsed) {
+      alert('Could not read the scorecard file. Please make sure you are uploading the .txt file exported from the Context Readiness Scorecard.');
+      return;
+    }
+    imported = parsed;
+    applyImport();
+  };
+  reader.readAsText(file);
+}
+
+function parseScorecard(text) {
+  try {
+    const org = (text.match(/Organization:\s*(.+)/i) || [])[1]?.trim() || '';
+    const date = (text.match(/Date:\s*(.+)/i) || [])[1]?.trim() || '';
+    const by = (text.match(/Completed by:\s*(.+)/i) || [])[1]?.trim() || '';
+    const foundation = (text.match(/Data Integration[^:]*:\s*([\d.]+)/i) || [])[1] || '0';
+    const intelligence = (text.match(/Organizational Alignment[^:]*:\s*([\d.]+)/i) || [])[1] || '0';
+    const capability = (text.match(/System Architecture[^:]*:\s*([\d.]+)/i) || [])[1] || '0';
+    const oversight = (text.match(/Governance[^:]*:\s*([\d.]+)/i) || [])[1] || '0';
+    const overall = (text.match(/OVERALL AVERAGE:\s*([\d.]+)/i) || [])[1] || '0';
+    return { organization: org, date, by, foundation, intelligence, capability, oversight, overall };
+  } catch(e) { return null; }
+}
+
+function applyImport() {
+  const d = imported;
+  const scores = {
+    1: parseFloat(d.foundation),
+    2: parseFloat(d.intelligence),
+    3: parseFloat(d.capability),
+    4: parseFloat(d.oversight)
+  };
+  const keys = ['foundation','intelligence','capability','oversight'];
+
+  // Show import status
+  document.getElementById('import-btn').style.display = 'none';
+  const status = document.getElementById('import-status');
+  status.classList.add('visible');
+  document.getElementById('import-label').textContent =
+    `${d.organization || 'Results'} imported — ${d.date || 'no date'}`;
+
+  // Update all four layers
+  [1,2,3,4].forEach(i => {
+    const s = getStatus(scores[i]);
+    const pct = ((scores[i] / 5) * 100).toFixed(0);
+
+    // Nav scores & bars
+    const scoreEl = document.getElementById('score-'+i);
+    scoreEl.textContent = scores[i].toFixed(1);
+    scoreEl.className = 'layer-score-chip ' + s;
+
+    const barWrap = document.getElementById('bar-wrap-'+i);
+    barWrap.classList.add('visible');
+    const bar = document.getElementById('bar-'+i);
+    bar.className = 'layer-bar-fill ' + s;
+    bar.style.width = pct + '%';
+
+    const badge = document.getElementById('badge-'+i);
+    badge.className = 'status-badge visible ' + s;
+    badge.textContent = getStatusLabel(scores[i]);
+
+    // Score banner
+    const banner = document.getElementById('banner-'+i);
+    banner.className = 'score-banner ' + s;
+    banner.style.display = 'flex';
+    document.getElementById('banner-score-'+i).textContent = scores[i].toFixed(1) + '/5';
+    document.getElementById('banner-status-'+i).textContent = getStatusLabel(scores[i]);
+    document.getElementById('banner-interp-'+i).textContent = layerContent[i].interpretations[s];
+
+    // Gap, impact, initiative blocks
+    document.getElementById('gap-block-'+i).style.display = 'block';
+    document.getElementById('gap-text-'+i).textContent = layerContent[i].gaps[s];
+    document.getElementById('impact-block-'+i).style.display = 'block';
+    document.getElementById('impact-text-'+i).textContent = layerContent[i].interpretations[s];
+    document.getElementById('init-block-'+i).style.display = 'block';
+    const initBox = document.getElementById('init-box-'+i);
+    initBox.className = 'initiative-box ' + s;
+    document.getElementById('init-text-'+i).textContent = layerContent[i].initiatives[s];
+
+    // Hide covers and nudge
+    document.getElementById('covers-'+i).style.display = 'none';
+    document.getElementById('nudge-'+i).style.display = 'none';
+  });
+
+  // Show PRD section
+  showPRDPreview();
+  document.getElementById('prd-section').classList.add('visible');
+}
+
+function clearImport() {
+  imported = null;
+  document.getElementById('file-input').value = '';
+  document.getElementById('import-btn').style.display = 'inline-flex';
+  document.getElementById('import-status').classList.remove('visible');
+  document.getElementById('prd-section').classList.remove('visible');
+  location.reload();
+}
+
+// ─── PRD PREVIEW ───
+function showPRDPreview() {
+  const d = imported;
+  const overall = parseFloat(d.overall);
+  const overallStatus = getStatusLabel(overall);
+  const critLayers = [];
+  if (getStatus(d.foundation) === 'critical') critLayers.push('Foundation');
+  if (getStatus(d.intelligence) === 'critical') critLayers.push('Intelligence');
+  if (getStatus(d.capability) === 'critical') critLayers.push('Capability');
+  if (getStatus(d.oversight) === 'critical') critLayers.push('Oversight');
+
+  let summary = `<strong>Overall: ${overall}/5.0 — ${overallStatus}</strong><br><br>`;
+  summary += `Foundation (Data): ${d.foundation}/5 · Intelligence (Org): ${d.intelligence}/5 · Capability (Systems): ${d.capability}/5 · Oversight (Governance): ${d.oversight}/5<br><br>`;
+  if (critLayers.length > 0) {
+    summary += `<strong>Critical layers requiring immediate action:</strong> ${critLayers.join(', ')}. These represent the highest risk to your AI program and must be addressed before scaling investment.`;
+  } else {
+    summary += `No layers are in critical status. Your primary focus should be advancing Building-stage layers before expanding AI scope.`;
+  }
+  document.getElementById('prd-preview').innerHTML = summary;
+}
+
+// ─── PRD DOWNLOAD ───
+function downloadPRD() {
+  const d = imported;
+  const now = new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
+  const scores = { foundation: d.foundation, intelligence: d.intelligence, capability: d.capability, oversight: d.oversight };
+  const overall = parseFloat(d.overall);
+
+  const layers = [
+    { name:'FOUNDATION (Data Access & Quality)', key:'foundation', score: d.foundation, dim:'Data Integration', owner:'Data Engineering / Platform Team' },
+    { name:'INTELLIGENCE (Organizational Knowledge & Memory)', key:'intelligence', score: d.intelligence, dim:'Organizational Alignment', owner:'AI Product Owner / Knowledge Management' },
+    { name:'CAPABILITY (Actions, Integrations & State)', key:'capability', score: d.capability, dim:'System Architecture', owner:'Engineering / Solutions Architect' },
+    { name:'OVERSIGHT (Guardrails, Quality & Governance)', key:'oversight', score: d.oversight, dim:'Governance', owner:'Risk / Compliance / AI Product Owner' }
+  ];
+
+  const prioritized = [...layers].sort((a,b) => a.score - b.score);
+
+  let txt = '';
+  txt += '='.repeat(60) + '\n';
+  txt += 'CONTEXT STACK READINESS — EXECUTIVE READOUT\n';
+  txt += '='.repeat(60) + '\n\n';
+  txt += `Organization:    ${d.organization}\n`;
+  txt += `Assessment Date: ${d.date || 'Not specified'}\n`;
+  txt += `Report Date:     ${now}\n`;
+  txt += `Prepared by:     ${d.by || 'Not specified'}\n`;
+  txt += `Part of:         Making AI Work series by Thomas Larson\n\n`;
+
+  txt += '-'.repeat(60) + '\n';
+  txt += 'OVERALL READINESS\n';
+  txt += '-'.repeat(60) + '\n';
+  txt += `Score: ${overall}/5.0 — ${getStatusLabel(overall)}\n\n`;
+
+  const overallInterp = {
+    critical:   'Your organization faces critical gaps across the context stack. AI investments are at high risk of failing to deliver measurable ROI without immediate foundational work. Scaling AI before addressing these gaps will compound the problem.',
+    building:   'Your organization has begun building context stack capabilities but has significant gaps in one or more layers. AI is delivering value in isolated areas but is not ready for broad deployment. Investment in foundational layers will unlock the next tier of returns.',
+    developing: 'Your context stack is developing meaningfully. You have viable AI capabilities in production. The focus should be on closing specific gaps that are limiting scale and reliability.',
+    advanced:   'Your context stack is in strong shape. The focus should be on governance scaling, competitive differentiation, and operationalizing the AI Product Owner role to sustain and compound this advantage.'
+  };
+  txt += overallInterp[getStatus(overall)] + '\n\n';
+
+  txt += '-'.repeat(60) + '\n';
+  txt += 'LAYER ASSESSMENT\n';
+  txt += '-'.repeat(60) + '\n\n';
+  layers.forEach((l, idx) => {
+    const s = getStatus(l.score);
+    const lc = layerContent[idx+1];
+    txt += `${l.name}\n`;
+    txt += `Score: ${l.score}/5.0 — ${getStatusLabel(l.score)}\n`;
+    txt += `Primary Gap: ${lc.gaps[s]}\n`;
+    txt += `Context: ${lc.interpretations[s]}\n\n`;
+  });
+
+  txt += '-'.repeat(60) + '\n';
+  txt += 'PRIORITIZED INITIATIVE ROADMAP\n';
+  txt += '-'.repeat(60) + '\n\n';
+  txt += 'Ordered by urgency (lowest score first — each layer unblocks those above it):\n\n';
+  prioritized.forEach((l, idx) => {
+    const s = getStatus(l.score);
+    const layerIdx = layers.findIndex(x => x.key === l.key);
+    const lc = layerContent[layerIdx+1];
+    txt += `Priority ${idx+1}: ${l.name.split(' (')[0]}\n`;
+    txt += `Status: ${getStatusLabel(l.score)} (${l.score}/5.0)\n`;
+    txt += `Owner: ${l.owner}\n`;
+    txt += `Initiative: ${lc.initiatives[s]}\n`;
+    txt += `Timeline: ${s==='critical' ? '0–8 weeks (immediate)' : s==='building' ? '8–12 weeks' : s==='developing' ? '12–24 weeks' : 'Ongoing / next cycle'}\n\n`;
+  });
+
+  txt += '-'.repeat(60) + '\n';
+  txt += 'RESOURCE REQUIREMENTS\n';
+  txt += '-'.repeat(60) + '\n\n';
+  const critCount = layers.filter(l => getStatus(l.score) === 'critical').length;
+  const tier = critCount >= 2 ? 'Foundational (pre-production)' : critCount === 1 ? 'Moderate (selective production)' : 'Advanced (scale and optimize)';
+  txt += `Investment Tier: ${tier}\n\n`;
+  txt += 'Required Roles (by priority):\n';
+  txt += '  — AI Product Owner: accountable for overall stack readiness and initiative sequencing\n';
+  if (getStatus(d.foundation) !== 'advanced') txt += '  — Data Engineer / Platform Lead: Foundation layer ownership\n';
+  if (getStatus(d.intelligence) !== 'advanced') txt += '  — Knowledge Management Lead: Intelligence layer ownership\n';
+  if (getStatus(d.capability) !== 'advanced') txt += '  — Solutions Architect / Engineer: Capability layer ownership\n';
+  if (getStatus(d.oversight) !== 'advanced') txt += '  — Risk / Compliance Lead: Oversight layer ownership\n';
+  txt += '\n';
+
+  txt += '-'.repeat(60) + '\n';
+  txt += 'SUCCESS METRICS (12-WEEK HORIZON)\n';
+  txt += '-'.repeat(60) + '\n\n';
+  if (getStatus(d.foundation) === 'critical' || getStatus(d.foundation) === 'building') {
+    txt += 'Foundation: Governed API connections established for top 3 data sources. Data freshness SLA defined and monitored. 100% of AI outputs traceable to a source.\n\n';
+  }
+  if (getStatus(d.intelligence) === 'critical' || getStatus(d.intelligence) === 'building') {
+    txt += 'Intelligence: Top 20% of organizational knowledge activated and AI-accessible. Semantic scope document drafted (Topics, authorized Actions, exclusions). At least one domain with full episodic memory.\n\n';
+  }
+  if (getStatus(d.capability) === 'critical' || getStatus(d.capability) === 'building') {
+    txt += 'Capability: At least 3 high-value actions integrated with authorization model. Graduated autonomy framework documented and approved. Observability stack live before production scale.\n\n';
+  }
+  if (getStatus(d.oversight) === 'critical' || getStatus(d.oversight) === 'building') {
+    txt += 'Oversight: Quality standards defined for primary use case. Automated evaluation sampling live on production traffic. Architectural guardrails in place (not prompt-level). Incident response protocol documented.\n\n';
+  }
+
+  txt += '-'.repeat(60) + '\n';
+  txt += 'AI PRODUCT OWNER HANDOFF\n';
+  txt += '-'.repeat(60) + '\n\n';
+  txt += `${d.organization} has an overall context stack readiness score of ${overall}/5.0, placing it in ${getStatusLabel(overall)} status. `;
+  if (critCount > 0) {
+    const critNames = layers.filter(l => getStatus(l.score) === 'critical').map(l => l.name.split(' (')[0]).join(' and ');
+    txt += `The ${critNames} layer${critCount>1?'s':''} represent${critCount>1?'':'s'} critical gaps that must be addressed before expanding AI investment — these are not technical risks, they are business risks that will compound with scale. `;
+  }
+  txt += `The recommended first action is to assign ownership of each layer to a named individual with accountability for the initiative roadmap above. Without ownership, priorities stall regardless of budget. `;
+  txt += `The AI Product Owner role — combining product management with AI-specific accountability for data quality, model performance, and continuous governance — is the mechanism that makes the difference between organizations that pilot AI forever and those that deploy it at scale.\n\n`;
+  txt += `Next in the Making AI Work series: Part 3 — Designing Intelligence: the UX layer that determines whether a technically sound context stack actually delivers value to the people using it.\n`;
+  txt += `Follow Thomas Larson on LinkedIn: linkedin.com/in/thomas-larson-211a1981\n`;
+  txt += `Series home: thomaslarson.carrd.co\n\n`;
+  txt += '='.repeat(60) + '\n';
+  txt += 'Generated by The Context Stack · Making AI Work Part 2\n';
+  txt += 'ceruleanoak.github.io/context-stack\n';
+  txt += '='.repeat(60) + '\n';
+
+  const blob = new Blob([txt], {type:'text/plain'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `context-stack-readout-${(d.organization||'org').replace(/[^a-z0-9]/gi,'-').toLowerCase()}-${now.replace(/[^a-z0-9]/gi,'-').toLowerCase()}.txt`;
+  a.click();
+}
+</script>
+</body>
+</html>
