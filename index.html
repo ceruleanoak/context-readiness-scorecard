@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Context Readiness Scorecard - Making AI Work</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -556,9 +558,67 @@
                 page-break-inside: avoid;
             }
         }
+
+        /* series nav bar */
+        .series-nav {
+            position: sticky;
+            top: 0;
+            z-index: 200;
+            background: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            font-family: 'Figtree', -apple-system, sans-serif;
+        }
+        .series-nav-inner {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 0 24px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+        }
+        .series-nav-tag {
+            font-size: 12px;
+            color: #64748b;
+            font-family: 'IBM Plex Mono', monospace;
+            letter-spacing: 0.03em;
+        }
+        .series-nav-tag a { color: #2563eb; text-decoration: none; }
+        .series-nav-tag a:hover { text-decoration: underline; }
+        .series-nav-btn {
+            font-size: 12px;
+            font-weight: 500;
+            padding: 5px 14px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            color: #334155;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+        .series-nav-btn:hover {
+            border-color: #2563eb;
+            color: #2563eb;
+            background: #eff6ff;
+        }
     </style>
 </head>
 <body>
+<nav class="series-nav">
+  <div class="series-nav-inner">
+    <div class="series-nav-tag">
+      Part of <strong>Making AI Work</strong> by
+      <a href="https://www.linkedin.com/in/thomas-larson-211a1981/" target="_blank">Thomas Larson</a>
+      &nbsp;&middot;&nbsp; Part 1 of 5
+    </div>
+    <a href="context-stack.html" class="series-nav-btn">Part 2: The Context Stack &rarr;</a>
+  </div>
+</nav>
+
     <div class="container">
         <div class="header">
             <h1>Context Readiness Scorecard</h1>
